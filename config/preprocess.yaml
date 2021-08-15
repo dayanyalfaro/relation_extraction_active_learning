@@ -1,0 +1,14 @@
+# Do you need to preprocess the data
+# When the data processing parameters are not changed, there is no need to pre-process
+preprocess: False
+
+# Original data storage location
+data_path: 'data/ehealthKD2021'
+
+# File location after preprocessing
+out_path: 'data/preprocess'
+
+# Sentence length limit: Refers to the position limit of the relative entity of the word in the sentence
+# For example: [-30, 30], when embed, the overall +31 becomes [1, 61]
+# There are a total of 62 pos tokens, 0 is reserved for pad
+pos_limit: 30

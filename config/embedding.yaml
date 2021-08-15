@@ -1,0 +1,10 @@
+# populated at runtime
+vocab_size: ???
+word_dim: 60
+pos_size: ??? # 2 * pos_limit + 2
+pos_dim: 10   # When it is sum, this value is invalid and is forcibly the same as word_dim
+
+dim_strategy: sum # [cat, sum]
+
+# Type of relationship
+num_relations: 14
