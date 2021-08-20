@@ -8,7 +8,7 @@ import torch.nn as nn
 import models
 import data_select
 
-from hydra import utils
+# from hydra import utils
 from omegaconf import OmegaConf
 from torch import optim
 from torch.utils.data import DataLoader
@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 @hydra.main(config_path='config/', config_name = 'config')
 def main(cfg):
-    cwd = utils.get_original_cwd()
+    cwd = hydra.utils.get_original_cwd()
     cfg.cwd = cwd
     cfg.pos_size = 2 * cfg.pos_limit + 2
     logger.info(f'\n{OmegaConf.to_yaml(cfg)}')
