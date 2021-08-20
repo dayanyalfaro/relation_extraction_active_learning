@@ -1,11 +1,11 @@
 model_name: cnn
 
 in_channels: ???           # Use embedding output result, no need to specify
-out_channels: 100
+out_channels: 150
 kernel_sizes: [3, 5, 7]    # Must be an odd number, in order to ensure that the output of cnn does not change the sentence length
-activation: 'gelu'         # [relu, lrelu, prelu, selu, celu, gelu, sigmoid, tanh]
+activation: 'tanh'         # [relu, lrelu, prelu, selu, celu, gelu, sigmoid, tanh]
 pooling_strategy: 'max'    # [max, avg]
 keep_length: True
-dropout: 0.3
+dropout: 0.5
 
 intermediate: 80

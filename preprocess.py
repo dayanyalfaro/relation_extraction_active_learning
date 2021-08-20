@@ -119,7 +119,7 @@ def preprocess(cfg):
     test_collection = Collection().load_dir(test_path)
 
     logger.info('process collections...')
-    train_data = _preprocess_collection(train_collection)
+    train_data = _preprocess_collection(train_collection)[:10000]
     valid_data = _preprocess_collection(valid_collection)
     test_data = _preprocess_collection(test_collection)
 
@@ -160,7 +160,7 @@ def preprocess(cfg):
 
     logger.info('=' * 10 + ' End preprocess data ' + '=' * 10)
 
-    
+
 
 
 

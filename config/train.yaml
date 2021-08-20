@@ -6,11 +6,11 @@ gpu_id: 0
 # Active learning strategy
 select_method: 'random' #['random']
 
-# Amount of labeled samples at the beginning
-start_size : 2000
+start_size : 4000 # Amount of labeled samples at the beginning
+select_batch_size : 200
 
 epoch: 10
-batch_size: 128
+batch_size: 64
 learning_rate: 3e-4
 lr_factor: 0.7 # Decay rate of learning rate
 lr_patience: 3 # Waiting epoch with learning rate decay
@@ -18,7 +18,7 @@ weight_decay: 1e-3 # L2 regular
 
 early_stopping_patience: 6
 
-train_log: True
+train_log: False
 log_interval: 10
 show_plot: True
 only_comparison_plot: False

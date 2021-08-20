@@ -27,7 +27,7 @@ class BasicModule(nn.Module):
         time_prefix = time.strftime('%Y-%m-%d_%H-%M-%S')
         prefix = os.path.join(cfg.cwd, 'weights',time_prefix)
         os.makedirs(prefix, exist_ok=True)
-        name = os.path.join(prefix, cfg.model_name + '_' + f'epoch{epoch}' + '.pth')
+        name = os.path.join(prefix, cfg.model.model_name + '_' + f'epoch{epoch}' + '.pth')
 
         torch.save(self.state_dict(), name)
         return name

@@ -63,17 +63,17 @@ def main(cfg):
     cur_labeled_ds = all_train_ds[:cfg.start_size]
     unlabeled_ds = all_train_ds[cfg.start_size:]
 
-    size, per_log_num = 200, 400
+    per_log_num = 400
     all_size = len(all_train_ds)
-
+    # print(all_size)
     writer = SummaryWriter('tensorboard')
 
     select_method = __Select__[cfg.select_method]
-    model = __Model__[cfg.model.model_name](cfg)
 
     logger.info('=' * 10 + ' Start training ' + '=' * 10)
     test_f1_scores, test_losses = [], []
     while len(cur_labeled_ds) <= all_size:
+        model = __Model__[cfg.model.model_name](cfg)
         if len(cur_labeled_ds) == cfg.start_size:
             logger.info(f'\n {model}')
         model.to(device)
@@ -117,7 +117,7 @@ def main(cfg):
         if len(cur_labeled_ds) == all_size:
             break
 
-        cur_labeled_ds, unlabeled_ds = select_method(cur_labeled_ds, unlabeled_ds, size, model, device, cfg)
+        cur_labeled_ds, unlabeled_ds = select_method(cur_labeled_ds, unlabeled_ds, model, device, cfg)
 
     if cfg.show_plot and cfg.plot_utils == 'tensorboard':
         for j in range(len(test_f1_scores)):
