@@ -100,16 +100,16 @@ def main(cfg):
             valid_losses.append(valid_loss)
             one_f1_scores.append(valid_f1)
 
-        if cfg.show_plot and cfg.plot_utils == 'tensorboard' and (len(cur_labeled_ds) - cfg.start_size) % per_log_num == 0:
+        #if cfg.show_plot and cfg.plot_utils == 'tensorboard' and (len(cur_labeled_ds) - cfg.start_size) % per_log_num == 0:
             # logger.info(f'one_f1_scores:{one_f1_scores}')
-            for i in range(len(train_losses)):
-                writer.add_scalars(f'valid_copy/valid_loss_{len(cur_labeled_ds)}', {
-                    'train': train_losses[i],
-                    'valid': valid_losses[i]
-                }, i)
-                writer.add_scalars(f'valid/valid_f1_score_{len(cur_labeled_ds)}', {
-                    'valid_f1_score': one_f1_scores[i]
-                }, i)
+        for i in range(len(train_losses)): #TODO put inside if
+            writer.add_scalars(f'valid_copy/valid_loss_{len(cur_labeled_ds)}', {
+                'train': train_losses[i],
+                'valid': valid_losses[i]
+            }, i)
+            writer.add_scalars(f'valid/valid_f1_score_{len(cur_labeled_ds)}', {
+                'valid_f1_score': one_f1_scores[i]
+            }, i)
 
         test_f1, test_loss = validate(-1, model, test_dataloader, criterion, device, cfg)
         test_f1_scores.append(test_f1)
