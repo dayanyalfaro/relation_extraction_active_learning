@@ -84,7 +84,7 @@ def main(cfg):
 
         train_dataloader = DataLoader(cur_labeled_ds, batch_size=cfg.batch_size, shuffle=True,
                                       collate_fn=collate_fn(cfg))
-        logger.info("Dataloader loaded")
+
         train_losses, valid_losses, one_f1_scores = [], [], []
         for epoch in range(1, cfg.epoch + 1):
             # Ensure that the random seed is different every round

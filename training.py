@@ -40,7 +40,7 @@ def train(epoch, model, dataloader, optimizer, criterion, device, writer, cfg):
         for i in range(len(losses)):
             writer.add_scalar(f'epoch_{epoch}_training_loss', losses[i], i)
 
-    return losses[-1]
+    return sum(losses) / len(losses)
 
 
 def validate(epoch, model, dataloader, criterion, device, cfg):
