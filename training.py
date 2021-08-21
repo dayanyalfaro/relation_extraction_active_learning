@@ -26,7 +26,7 @@ def train(epoch, model, dataloader, optimizer, criterion, device, writer, cfg):
         optimizer.step()
 
         metric.update(y_true=y, y_pred=y_pred)
-        losses.append(loss.item())
+        losses.append(loss.item()*len(y))
         # TODO batch_size * 10 correct?
         data_total = len(dataloader.dataset)
         data_cal = data_total if batch_idx == len(dataloader) else batch_idx * len(y)
@@ -34,13 +34,13 @@ def train(epoch, model, dataloader, optimizer, criterion, device, writer, cfg):
             # p r f1 are all macros, because the three are the same for micro, they are defined as acc
             acc, p, r, f1 = metric.compute()
             logger.info(f'Train Epoch {epoch}: [{data_cal}/{data_total}]({100. * data_cal / data_total:.0f}%)\t'
-                        f'Loss: {loss.item():.6f}\t metrics: [p: {p:.4f}, r:{r:.4f}, f1:{f1:.4f}]')
+                        f'Loss: {(loss.item()*len(y)):.6f}\t metrics: [p: {p:.4f}, r:{r:.4f}, f1:{f1:.4f}]')
 
     if cfg.show_plot and not cfg.only_comparison_plot and cfg.plot_utils == 'tensorboard':
         for i in range(len(losses)):
             writer.add_scalar(f'epoch_{epoch}_training_loss', losses[i], i)
 
-    return losses[-1]
+    return sum(losses) / len(losses)
 
 
 def validate(epoch, model, dataloader, criterion, device, cfg):
@@ -60,7 +60,7 @@ def validate(epoch, model, dataloader, criterion, device, cfg):
             loss = criterion(y_pred, y)
 
             metric.update(y_true=y, y_pred=y_pred)
-            losses.append(loss.item())
+            losses.append(loss.item() * len(y))
 
     loss = sum(losses) / len(losses)
     acc, p, r, f1 = metric.compute()
