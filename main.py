@@ -8,7 +8,7 @@ import torch.nn as nn
 import models
 import data_select
 
-# from hydra import utils
+from hydra import utils
 from omegaconf import OmegaConf
 from torch import optim
 from torch.utils.data import DataLoader
@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 @hydra.main(config_path='config/', config_name = 'config')
 def main(cfg):
-    cwd = hydra.utils.get_original_cwd()
+    cwd = utils.get_original_cwd()
     cfg.cwd = cwd
     cfg.pos_size = 2 * cfg.pos_limit + 2
     logger.info(f'\n{OmegaConf.to_yaml(cfg)}')
@@ -60,12 +60,13 @@ def main(cfg):
 
     all_train_ds = load_pkl(train_data_path)
     random.shuffle(all_train_ds)
-    cur_labeled_ds = all_train_ds[:cfg.start_size]
+    cur_labeled_ds = all_train_ds
+    # cur_labeled_ds = all_train_ds[:cfg.start_size]
     unlabeled_ds = all_train_ds[cfg.start_size:]
 
     per_log_num = 400
     all_size = len(all_train_ds)
-    # print(all_size)
+    print(all_size)
     writer = SummaryWriter('tensorboard')
 
     select_method = __Select__[cfg.select_method]
@@ -74,8 +75,8 @@ def main(cfg):
     test_f1_scores, test_losses = [], []
     while len(cur_labeled_ds) <= all_size:
         model = __Model__[cfg.model.model_name](cfg)
-        if len(cur_labeled_ds) == cfg.start_size:
-            logger.info(f'\n {model}')
+        # if len(cur_labeled_ds) == cfg.start_size:
+        logger.info(f'\n {model}') #TODO put this inside if
         model.to(device)
         optimizer = optim.Adam(model.parameters(), lr=cfg.learning_rate, weight_decay=cfg.weight_decay)
         scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor=cfg.lr_factor, patience=cfg.lr_patience)
@@ -83,6 +84,7 @@ def main(cfg):
 
         train_dataloader = DataLoader(cur_labeled_ds, batch_size=cfg.batch_size, shuffle=True,
                                       collate_fn=collate_fn(cfg))
+        logger.info("Dataloader loaded")
         train_losses, valid_losses, one_f1_scores = [], [], []
         for epoch in range(1, cfg.epoch + 1):
             # Ensure that the random seed is different every round

@@ -7,7 +7,6 @@ logger = logging.getLogger(__name__)
 
 def train(epoch, model, dataloader, optimizer, criterion, device, writer, cfg):
     model.train()
-
     metric = PRMetric()
     losses = []
 

@@ -1,6 +1,6 @@
 # Do you need to preprocess the data
 # When the data processing parameters are not changed, there is no need to pre-process
-preprocess: True
+preprocess: False
 
 # Original data storage location
 data_path: 'data/ehealthKD2021'

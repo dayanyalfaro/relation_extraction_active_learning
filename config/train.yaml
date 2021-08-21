@@ -18,7 +18,7 @@ weight_decay: 1e-3 # L2 regular
 
 early_stopping_patience: 6
 
-train_log: False
+train_log: True
 log_interval: 10
 show_plot: True
 only_comparison_plot: False
