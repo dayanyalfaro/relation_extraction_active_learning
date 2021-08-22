@@ -82,7 +82,7 @@ class CNN(nn.Module):
         act_fn = self.activations[self.activation]
 
         x = [act_fn(conv(x)) for conv in self.convs]
-        x = torch.cat(x, dim=1)
+        # x = torch.cat(x, dim=1)
 
         # mask
         if mask is not None:
@@ -93,14 +93,15 @@ class CNN(nn.Module):
         # pooling
         # [[B, H, L], ... ] -> [[B, H], ... ]
         if self.pooling_strategy == 'max':
-            xp = F.max_pool1d(x, kernel_size=x.size(2)).squeeze(2)
+            xp = [F.max_pool1d(i, kernel_size=i.size(2)).squeeze(2) for i in x]
             # Equivalent to xp = torch.max(x, dim=2)[0]
         elif self.pooling_strategy == 'avg':
             x_len = mask.squeeze().eq(0).sum(-1).unsqueeze(-1).to(torch.float).to(device=mask.device)
             xp = torch.sum(x, dim=-1) / x_len
 
-        x = x.transpose(1, 2)
-        x = self.dropout(x)
+        xp = torch.cat(xp, dim=1)
+        # x = x.transpose(1, 2)
+        # x = self.dropout(x)
         xp = self.dropout(xp)
 
-        return x, xp  # [B, L, Hs], [B, Hs]
+        return xp  # [B, L, Hs], [B, Hs]

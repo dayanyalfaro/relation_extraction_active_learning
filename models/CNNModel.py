@@ -23,10 +23,10 @@ class CNNModel(BasicModule):
 
     def forward(self, x):
         word, lens, head_pos, tail_pos = x['word'], x['lens'], x['head_pos'], x['tail_pos']
-        mask = seq_len_to_mask(lens)
+        # mask = seq_len_to_mask(lens)
 
         inputs = self.embedding(word, head_pos, tail_pos)
-        out, out_pool = self.cnn(inputs, mask=mask)
+        out_pool = self.cnn(inputs)
 
         output = self.fc1(out_pool)
         output = F.leaky_relu(output)
@@ -46,7 +46,7 @@ class CNNFcExtractor(nn.Module):
         mask = seq_len_to_mask(lens)
 
         x = self.submodule.embedding(word, head_pos, tail_pos)
-        out, x = self.submodule.cnn(x, mask=mask)
+        x = self.submodule.cnn(x, mask=mask)
         x = self.submodule.fc1(x)
         x = F.leaky_relu(x)
         return x
