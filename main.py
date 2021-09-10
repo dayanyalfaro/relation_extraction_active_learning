@@ -33,6 +33,7 @@ def main(cfg):
 
     __Select__ = {
         'random': data_select.random_sample,
+        'uncertainty': data_select.uncertainty_sample
     }
 
     # device

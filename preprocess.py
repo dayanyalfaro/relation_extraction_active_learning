@@ -59,7 +59,7 @@ def _add_pos_seq(train_data: List[Dict], cfg):
 
 
 def _get_sentence_spans(sentence:str):
-    return [(token.idx, token.idx+len(token)) for token in nlp(sentence)] 
+    return [(token.idx, token.idx+len(token)) for token in nlp(sentence)]
 
 def _get_pos_in_spans(start, end, spans):
     s = None
@@ -120,6 +120,8 @@ def preprocess(cfg):
 
     logger.info('process collections...')
     train_data = _preprocess_collection(train_collection)
+    if not cfg.use_all_train:
+        train_data = train_data[:cfg.train_size]
     valid_data = _preprocess_collection(valid_collection)
     test_data = _preprocess_collection(test_collection)
 

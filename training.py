@@ -36,9 +36,9 @@ def train(epoch, model, dataloader, optimizer, criterion, device, writer, cfg):
             logger.info(f'Train Epoch {epoch}: [{data_cal}/{data_total}]({100. * data_cal / data_total:.0f}%)\t'
                         f'Loss: {loss.item():.6f}\t metrics: [p: {p:.4f}, r:{r:.4f}, f1:{f1:.4f}]')
 
-    if cfg.show_plot and not cfg.only_comparison_plot and cfg.plot_utils == 'tensorboard':
-        for i in range(len(losses)):
-            writer.add_scalar(f'epoch_{epoch}_training_loss', losses[i], i)
+    # if cfg.show_plot and not cfg.only_comparison_plot and cfg.plot_utils == 'tensorboard':
+    #     for i in range(len(losses)):
+    #         writer.add_scalar(f'epoch_{epoch}_training_loss', losses[i], i)
 
     return sum(losses) / len(losses)
 
