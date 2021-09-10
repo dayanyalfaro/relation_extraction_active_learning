@@ -12,7 +12,7 @@ select_batch_size : 100
 use_all_train : False
 train_size : 10000 # Subset of training dataset to use
 
-epoch: 15
+epoch: 10
 batch_size: 64
 learning_rate: 3e-4
 lr_factor: 0.7 # Decay rate of learning rate
