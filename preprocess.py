@@ -1,11 +1,17 @@
 import os
+import wget
+import bz2
+import torch
 import spacy
+import shutil
 import logging
+import numpy as np
 
 from tqdm import tqdm
 from pathlib import Path
 from typing import List, Dict
 from itertools import permutations
+from gensim.models.word2vec import KeyedVectors
 
 from ann_scripts.anntools import Collection
 from utils import save_pkl
@@ -33,13 +39,45 @@ rel2idx = {
             "is-a": 13
         }
 
+class WordEmbeddingLoader(object):
+    """
+    A loader for pre-trained word embedding
+    """
 
-def _add_tokens_index(data: List[Dict], vocab):
+    def __init__(self, cfg):
+        self.path_word = cfg.cwd + cfg.pretrained_path  # path of pre-trained word embedding
+
+    def load_embedding(self):
+        if not os.path.exists(self.path_word):
+            logger.info('Downloading the pretrained embedding')
+            wget.download("http://cs.famaf.unc.edu.ar/~ccardellino/SBWCE/SBW-vectors-300-min5.txt.bz2")
+            vec_zip_path = "SBW-vectors-300-min5.txt.bz2"
+
+            logger.info('Extracting the pretrained embedding')
+            with bz2.open(vec_zip_path, 'rb') as f_in:
+                with open(self.path_word, 'wb') as f_out:
+                    shutil.copyfileobj(f_in, f_out)
+
+        wv = KeyedVectors.load_word2vec_format(self.path_word)
+
+        word2idx = { w : k + 2 for (w,k) in wv.key_to_index.items()}  # word to wordID
+        word2idx['[PAD]'] = 0  # PAD character
+        word2idx['[UNK]'] = 1  # UNK character
+
+        num_words, embedding_dim = wv.vectors.shape
+        embedding_matrix = np.zeros((num_words + 2, embedding_dim))
+        embedding_matrix[2:] = wv.vectors
+        embedding_matrix = embedding_matrix.astype(np.float32)
+        embedding_matrix = torch.from_numpy(embedding_matrix)
+
+        return word2idx, embedding_matrix
+
+def _add_tokens_index(data: List[Dict], word2idx):
     unk_str = '[UNK]'
-    unk_idx = vocab.word2idx[unk_str]
+    unk_idx = word2idx[unk_str]
 
     for d in data:
-        d['token2idx'] = [vocab.word2idx.get(i, unk_idx) for i in d['tokens']]
+        d['token2idx'] = [word2idx.get(i, unk_idx) for i in d['tokens']]
 
 def _handle_pos_limit(pos: List[int], limit: int) -> List[int]:
     for i, p in enumerate(pos):
@@ -125,19 +163,38 @@ def preprocess(cfg):
     valid_data = _preprocess_collection(valid_collection)
     test_data = _preprocess_collection(test_collection)
 
-    logger.info('build vocabulary...')
-    vocab = Vocab()
-    train_tokens = [d['tokens'] for d in train_data]
-    valid_tokens = [d['tokens'] for d in valid_data]
-    test_tokens = [d['tokens'] for d in test_data]
-    sent_tokens = [*train_tokens, *valid_tokens, *test_tokens]
-    for sent in sent_tokens:
-        vocab.add_words(sent)
+    if cfg.use_pretrained:
+        logger.info('load word embedding...')
+        word2idx, word_vec = WordEmbeddingLoader(cfg).load_embedding()
+        cfg.word_dim = word_vec.shape[1]
+
+        logger.info('save word2vec file...')
+        word_vec_save_fp = os.path.join(cfg.cwd, cfg.out_path, 'word2vec.pkl')
+        save_pkl(word_vec, word_vec_save_fp)
+    else:
+        logger.info('build vocabulary...')
+        vocab = Vocab()
+        train_tokens = [d['tokens'] for d in train_data]
+        valid_tokens = [d['tokens'] for d in valid_data]
+        test_tokens = [d['tokens'] for d in test_data]
+        sent_tokens = [*train_tokens, *valid_tokens, *test_tokens]
+        for sent in sent_tokens:
+            vocab.add_words(sent)
+
+        word2idx = vocab.word2idx
+
+        logger.info('save vocab file...')
+        vocab_save_fp = os.path.join(cfg.cwd, cfg.out_path, 'vocab.pkl')
+        vocab_txt = os.path.join(cfg.cwd, cfg.out_path, 'vocab.txt')
+        save_pkl(vocab, vocab_save_fp)
+        logger.info('save vocab in txt file, for watching...')
+        with open(vocab_txt, 'w', encoding='utf-8') as f:
+            f.write(os.linesep.join(vocab.word2idx.keys()))
 
     logger.info('get index of tokens...')
-    _add_tokens_index(train_data, vocab)
-    _add_tokens_index(valid_data, vocab)
-    _add_tokens_index(test_data, vocab)
+    _add_tokens_index(train_data, word2idx)
+    _add_tokens_index(valid_data, word2idx)
+    _add_tokens_index(test_data, word2idx)
 
     logger.info('build position sequence...')
     _add_pos_seq(train_data, cfg)
@@ -152,13 +209,6 @@ def preprocess(cfg):
     save_pkl(train_data, train_save_fp)
     save_pkl(valid_data, valid_save_fp)
     save_pkl(test_data, test_save_fp)
-
-    vocab_save_fp = os.path.join(cfg.cwd, cfg.out_path, 'vocab.pkl')
-    vocab_txt = os.path.join(cfg.cwd, cfg.out_path, 'vocab.txt')
-    save_pkl(vocab, vocab_save_fp)
-    logger.info('save vocab in txt file, for watching...')
-    with open(vocab_txt, 'w', encoding='utf-8') as f:
-        f.write(os.linesep.join(vocab.word2idx.keys()))
 
     logger.info('=' * 10 + ' End preprocess data ' + '=' * 10)
 

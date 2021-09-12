@@ -6,5 +6,8 @@ pos_dim: 50   # When it is sum, this value is invalid and is forcibly the same a
 
 dim_strategy: 'cat' # [cat, sum]
 
+use_pretrained: True
+pretrained_path: '/embedding/SBW-vectors-300-min5.txt'
+
 # Type of relationship
 num_relations: 14

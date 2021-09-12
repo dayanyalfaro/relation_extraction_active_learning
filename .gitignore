@@ -132,3 +132,4 @@ outputs/
 *.pkl
 vocab.txt
 .vscode
+embedding/
