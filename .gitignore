@@ -132,4 +132,4 @@ outputs/
 *.pkl
 vocab.txt
 .vscode
-embedding/
+SBW-vectors-300-min5.txt

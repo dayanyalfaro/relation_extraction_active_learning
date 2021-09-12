@@ -55,7 +55,7 @@ class WordEmbeddingLoader(object):
 
             logger.info('Extracting the pretrained embedding')
             with bz2.open(vec_zip_path, 'rb') as f_in:
-                with open(self.path_word, 'wb') as f_out:
+                with open(self.path_word, 'xb') as f_out:
                     shutil.copyfileobj(f_in, f_out)
 
         wv = KeyedVectors.load_word2vec_format(self.path_word)
