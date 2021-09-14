@@ -29,6 +29,7 @@ def main(cfg):
     logger.info(f'\n{OmegaConf.to_yaml(cfg)}')
 
     __Model__ = {'cnn' : models.CNNModel,
+                 'rnn' : models.LSTMModel,
     }
 
     __Select__ = {

@@ -1,0 +1,10 @@
+model_name: rnn
+
+type_rnn: 'LSTM'    # [RNN, GRU, LSTM]
+
+input_size: ???     # Use embedding output result, no need to specify
+hidden_size: 150    # Must be even
+num_layers: 2
+dropout: 0.3
+bidirectional: True
+last_layer_hn: True
