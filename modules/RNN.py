@@ -38,7 +38,7 @@ class RNN(nn.Module):
         B, L, _ = x.size()
         H, N = self.hidden_size, self.num_layers
 
-        x = pack_padded_sequence(x, x_len, batch_first=True, enforce_sorted=True)
+        x = pack_padded_sequence(x, x_len.cpu(), batch_first=True, enforce_sorted=True)
         output, hn = self.rnn(x)
         output, _ = pad_packed_sequence(output, batch_first=True, total_length=L)
 
