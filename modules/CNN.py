@@ -39,16 +39,21 @@ class CNN(nn.Module):
             assert kernel_size % 2 == 1, "kernel size has to be odd numbers."
 
         # convolution
-        self.convs = nn.ModuleList([
-            nn.Conv1d(in_channels=self.in_channels,
-                      out_channels=self.out_channels,
-                      kernel_size=k,
-                      stride=1,
-                      padding=k // 2 if self.keep_length else 0,
-                      dilation=1,
-                      groups=1,
-                      bias=False) for k in self.kernel_sizes
-        ])
+        # self.convs = nn.ModuleList([
+        #     nn.Conv1d(in_channels=self.in_channels,
+        #               out_channels=self.out_channels,
+        #               kernel_size=k,
+        #               stride=1,
+        #               padding=k // 2 if self.keep_length else 0,
+        #               dilation=1,
+        #               groups=1,
+        #               bias=False) for k in self.kernel_sizes
+        # ])
+        self.convs = nn.ModuleList([nn.Conv2d(in_channels=1,
+                                              out_channels=self.out_channels,
+                                              kernel_size=(k, self.in_channels),
+                                              padding=0) for k in self.kernel_sizes]
+                                   )
 
         # activation function
         assert self.activation in ['relu', 'lrelu', 'prelu', 'selu', 'celu', 'gelu', 'sigmoid', 'tanh'], \
@@ -76,14 +81,17 @@ class CNN(nn.Module):
             :return:
             """
         # [B, L, H] -> [B, H, L] (Note: Use the H dimension as the input channel dimension) 
-        x = torch.transpose(x, 1, 2)
+        # x = torch.transpose(x, 1, 2)
+
+        # [B,1,L,H]
+        x = x.unsqueeze(1)
 
         # convolution + activation  [[B, H, L], ... ]
         act_fn = self.activations[self.activation]
 
-        x = [act_fn(conv(x)) for conv in self.convs]
+        x = [act_fn(conv(x)).squeeze(3) for conv in self.convs]
         # x = torch.cat(x, dim=1)
-
+        print(x[0].shape)
         # mask
         if mask is not None:
             # [B, L] -> [B, 1, L]
