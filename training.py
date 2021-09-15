@@ -30,17 +30,20 @@ def train(epoch, model, dataloader, optimizer, criterion, device, writer, cfg):
         # TODO batch_size * 10 correct?
         data_total = len(dataloader.dataset)
         data_cal = data_total if batch_idx == len(dataloader) else batch_idx * len(y)
-        if (cfg.train_log and batch_idx % cfg.log_interval == 0) or batch_idx == len(dataloader):
-            # p r f1 are all macros, because the three are the same for micro, they are defined as acc
-            acc, p, r, f1 = metric.compute()
-            logger.info(f'Train Epoch {epoch}: [{data_cal}/{data_total}]({100. * data_cal / data_total:.0f}%)\t'
-                        f'Loss: {loss.item():.6f}\t metrics: [p: {p:.4f}, r:{r:.4f}, f1:{f1:.4f}]')
+        # if (cfg.train_log and batch_idx % cfg.log_interval == 0) or batch_idx == len(dataloader):
+        #     # p r f1 are all macros, because the three are the same for micro, they are defined as acc
+        #     acc, p, r, f1 = metric.compute()
+        #     logger.info(f'Train Epoch {epoch}: [{data_cal}/{data_total}]({100. * data_cal / data_total:.0f}%)\t'
+        #                 f'Loss: {loss.item():.6f}\t metrics: [p: {p:.4f}, r:{r:.4f}, f1:{f1:.4f}]')
 
     # if cfg.show_plot and not cfg.only_comparison_plot and cfg.plot_utils == 'tensorboard':
     #     for i in range(len(losses)):
     #         writer.add_scalar(f'epoch_{epoch}_training_loss', losses[i], i)
-
-    return sum(losses) / len(losses)
+    acc, p, r, f1 = metric.compute()
+    total_loss = sum(losses) / len(losses)
+    logger.info(f'Train Epoch {epoch}: [{data_total}/{data_total}](100%)\t Loss: {total_loss:.6f}\t'
+                    f'metrics: [p: {p:.4f}, r:{r:.4f}, f1:{f1:.4f}, acc:{acc:.4f}]')
+    return total_loss
 
 
 def validate(epoch, model, dataloader, criterion, device, cfg):
@@ -68,9 +71,9 @@ def validate(epoch, model, dataloader, criterion, device, cfg):
 
     if epoch >= 0:
         logger.info(f'Valid Epoch {epoch}: [{data_total}/{data_total}](100%)\t Loss: {loss:.6f}\t'
-                    f'metrics: [p: {p:.4f}, r:{r:.4f}, f1:{f1:.4f}]')
+                    f'metrics: [p: {p:.4f}, r:{r:.4f}, f1:{f1:.4f}, acc:{acc:.4f}]')
     else:
         logger.info(f'Test Data: [{data_total}/{data_total}](100%)\t Loss: {loss:.6f}\t'
-                    f'metrics: [p: {p:.4f}, r:{r:.4f}, f1:{f1:.4f}]')
+                    f'metrics: [p: {p:.4f}, r:{r:.4f}, f1:{f1:.4f}, acc:{acc:.4f}]')
 
     return f1, loss
