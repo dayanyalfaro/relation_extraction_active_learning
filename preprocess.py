@@ -11,6 +11,7 @@ from tqdm import tqdm
 from pathlib import Path
 from typing import List, Dict
 from itertools import permutations
+from transformers import BertTokenizer
 from gensim.models.word2vec import KeyedVectors
 
 from ann_scripts.anntools import Collection
@@ -72,6 +73,16 @@ class WordEmbeddingLoader(object):
 
         return word2idx, embedding_matrix
 
+def _lm_serialize(data: List[Dict], cfg):
+    logger.info('use bert tokenizer...')
+    tokenizer = BertTokenizer.from_pretrained(cfg.lm_file)
+    for d in data:
+        sent = d['sentence'].strip()
+        sent = sent.replace(d['head'], d['head_type'], 1).replace(d['tail'], d['tail_type'], 1)
+        sent += '[SEP]' + d['head'] + '[SEP]' + d['tail']
+        d['token2idx'] = tokenizer.encode(sent, add_special_tokens=True)
+        d['seq_len'] = len(d['token2idx'])
+
 def _add_tokens_index(data: List[Dict], word2idx):
     unk_str = '[UNK]'
     unk_idx = word2idx[unk_str]
@@ -130,6 +141,8 @@ def _preprocess_collection(collection: Collection):
                 'sentence' : sentence.text,
                 'tokens' : tokens,
                 'seq_len' : len(tokens),
+                'head' : head.text,
+                'tail' : tail.text,
                 'head_start' : hs,
                 'head_end' : he,
                 'tail_start' : ts,
@@ -163,43 +176,49 @@ def preprocess(cfg):
     valid_data = _preprocess_collection(valid_collection)
     test_data = _preprocess_collection(test_collection)
 
-    if cfg.use_pretrained:
-        logger.info('load word embedding...')
-        word2idx, word_vec = WordEmbeddingLoader(cfg).load_embedding()
-        cfg.word_dim = word_vec.shape[1]
-
-        logger.info('save word2vec file...')
-        word_vec_save_fp = os.path.join(cfg.cwd, cfg.out_path, 'word2vec.pkl')
-        save_pkl(word_vec, word_vec_save_fp)
+    if cfg.model.model_name == 'lm':
+        logger.info('use pretrained language models serialize sentence...')
+        _lm_serialize(train_data, cfg)
+        _lm_serialize(valid_data, cfg)
+        _lm_serialize(test_data, cfg)
     else:
-        logger.info('build vocabulary...')
-        vocab = Vocab()
-        train_tokens = [d['tokens'] for d in train_data]
-        valid_tokens = [d['tokens'] for d in valid_data]
-        test_tokens = [d['tokens'] for d in test_data]
-        sent_tokens = [*train_tokens, *valid_tokens, *test_tokens]
-        for sent in sent_tokens:
-            vocab.add_words(sent)
+        if cfg.use_pretrained:
+            logger.info('load word embedding...')
+            word2idx, word_vec = WordEmbeddingLoader(cfg).load_embedding()
+            cfg.word_dim = word_vec.shape[1]
 
-        word2idx = vocab.word2idx
+            logger.info('save word2vec file...')
+            word_vec_save_fp = os.path.join(cfg.cwd, cfg.out_path, 'word2vec.pkl')
+            save_pkl(word_vec, word_vec_save_fp)
+        else:
+            logger.info('build vocabulary...')
+            vocab = Vocab()
+            train_tokens = [d['tokens'] for d in train_data]
+            valid_tokens = [d['tokens'] for d in valid_data]
+            test_tokens = [d['tokens'] for d in test_data]
+            sent_tokens = [*train_tokens, *valid_tokens, *test_tokens]
+            for sent in sent_tokens:
+                vocab.add_words(sent)
 
-        logger.info('save vocab file...')
-        vocab_save_fp = os.path.join(cfg.cwd, cfg.out_path, 'vocab.pkl')
-        vocab_txt = os.path.join(cfg.cwd, cfg.out_path, 'vocab.txt')
-        save_pkl(vocab, vocab_save_fp)
-        logger.info('save vocab in txt file, for watching...')
-        with open(vocab_txt, 'w', encoding='utf-8') as f:
-            f.write(os.linesep.join(vocab.word2idx.keys()))
+            word2idx = vocab.word2idx
 
-    logger.info('get index of tokens...')
-    _add_tokens_index(train_data, word2idx)
-    _add_tokens_index(valid_data, word2idx)
-    _add_tokens_index(test_data, word2idx)
+            logger.info('save vocab file...')
+            vocab_save_fp = os.path.join(cfg.cwd, cfg.out_path, 'vocab.pkl')
+            vocab_txt = os.path.join(cfg.cwd, cfg.out_path, 'vocab.txt')
+            save_pkl(vocab, vocab_save_fp)
+            logger.info('save vocab in txt file, for watching...')
+            with open(vocab_txt, 'w', encoding='utf-8') as f:
+                f.write(os.linesep.join(vocab.word2idx.keys()))
 
-    logger.info('build position sequence...')
-    _add_pos_seq(train_data, cfg)
-    _add_pos_seq(valid_data, cfg)
-    _add_pos_seq(test_data, cfg)
+        logger.info('get index of tokens...')
+        _add_tokens_index(train_data, word2idx)
+        _add_tokens_index(valid_data, word2idx)
+        _add_tokens_index(test_data, word2idx)
+
+        logger.info('build position sequence...')
+        _add_pos_seq(train_data, cfg)
+        _add_pos_seq(valid_data, cfg)
+        _add_pos_seq(test_data, cfg)
 
     logger.info('save data for backup...')
     os.makedirs(os.path.join(cfg.cwd, cfg.out_path), exist_ok=True)

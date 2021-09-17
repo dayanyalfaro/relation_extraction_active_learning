@@ -37,8 +37,9 @@ def collate_fn(cfg):
         x['lens'] = torch.tensor(word_len)
         y = torch.tensor(y)
 
-        x['head_pos'] = torch.tensor(head_pos)
-        x['tail_pos'] = torch.tensor(tail_pos)
+        if cfg.model_name != 'lm':
+            x['head_pos'] = torch.tensor(head_pos)
+            x['tail_pos'] = torch.tensor(tail_pos)
 
         return x, y
 

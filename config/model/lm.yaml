@@ -1,0 +1,20 @@
+model_name: lm
+
+# When using a pre-trained language model, the storage location of the pre-trained model
+# lm_name = 'bert-base-chinese'  # download usage
+#lm_file: 'pretrained'
+lm_file: 'bert-base-multilingual'
+
+# The number of transformer layers, the initial base bert is 12 layers
+# However, when the amount of data is small, it is better to reduce it and converge faster.
+num_hidden_layers: 1
+
+
+# Parameters of bilstm followed by
+type_rnn: 'LSTM'    # [RNN, GRU, LSTM]
+input_size: 768     # This value is obtained by bert
+hidden_size: 100    # Must be even
+num_layers: 1
+dropout: 0.3
+bidirectional: True
+last_layer_hn: True

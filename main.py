@@ -30,6 +30,7 @@ def main(cfg):
 
     __Model__ = {'cnn' : models.CNNModel,
                  'rnn' : models.LSTMModel,
+                 'lm'  : models.LMModel,
     }
 
     __Select__ = {
@@ -51,8 +52,11 @@ def main(cfg):
     test_data_path = os.path.join(cfg.cwd, cfg.out_path, 'test.pkl')
     vocab_path = os.path.join(cfg.cwd, cfg.out_path, 'vocab.pkl')
 
-    vocab = load_pkl(vocab_path)
-    vocab_size = vocab.count
+    if cfg.model_name == 'lm':
+        vocab_size = None
+    else:
+        vocab = load_pkl(vocab_path)
+        vocab_size = vocab.count
     cfg.vocab_size = vocab_size
 
     valid_ds = CustomDataset(valid_data_path)
