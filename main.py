@@ -52,7 +52,7 @@ def main(cfg):
     test_data_path = os.path.join(cfg.cwd, cfg.out_path, 'test.pkl')
     vocab_path = os.path.join(cfg.cwd, cfg.out_path, 'vocab.pkl')
 
-    if cfg.model_name == 'lm':
+    if cfg.model.model_name == 'lm':
         vocab_size = None
     else:
         vocab = load_pkl(vocab_path)
