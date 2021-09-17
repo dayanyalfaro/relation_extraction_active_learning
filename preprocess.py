@@ -75,7 +75,7 @@ class WordEmbeddingLoader(object):
 
 def _lm_serialize(data: List[Dict], cfg):
     logger.info('use bert tokenizer...')
-    tokenizer = BertTokenizer.from_pretrained(cfg.lm_file)
+    tokenizer = BertTokenizer.from_pretrained(cfg.model.lm_file)
     for d in data:
         sent = d['sentence'].strip()
         sent = sent.replace(d['head'], d['head_type'], 1).replace(d['tail'], d['tail_type'], 1)

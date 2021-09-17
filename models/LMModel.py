@@ -7,11 +7,11 @@ from utils import seq_len_to_mask
 
 class LMModel(BasicModule):
     def __init__(self, cfg):
-        super(LM, self).__init__()
-        self.bert = BertModel.from_pretrained(cfg.lm_file, num_hidden_layers=cfg.num_hidden_layers)
+        super(LMModel, self).__init__()
+        self.bert = BertModel.from_pretrained(cfg.model.lm_file, num_hidden_layers=cfg.model.num_hidden_layers)
         self.bilstm = RNN(cfg)
-        self.fc = nn.Linear(cfg.hidden_size, cfg.num_relations)
-        self.dropout = nn.Dropout(cfg.dropout)
+        self.fc = nn.Linear(cfg.model.hidden_size, cfg.num_relations)
+        self.dropout = nn.Dropout(cfg.model.dropout)
 
     def forward(self, x):
         word, lens = x['word'], x['lens']
