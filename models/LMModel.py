@@ -16,8 +16,8 @@ class LMModel(BasicModule):
     def forward(self, x):
         word, lens = x['word'], x['lens']
         mask = seq_len_to_mask(lens, mask_pos_to_true=False)
-        last_hidden_state, pooler_output = self.bert(word, attention_mask=mask)
-        out, out_pool = self.bilstm(last_hidden_state, lens)
+        output = self.bert(word, attention_mask=mask)
+        out, out_pool = self.bilstm(output.last_hidden_state, lens)
         out_pool = self.dropout(out_pool)
         output = self.fc(out_pool)
 
