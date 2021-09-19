@@ -7,7 +7,7 @@ cwd: ???
 
 
 defaults:
-  - model: rnn # [cnn, rnn]
+  - model: lm # [cnn, rnn, lm]
   - embedding
   - preprocess
   - train
