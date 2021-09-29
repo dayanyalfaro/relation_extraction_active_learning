@@ -10,7 +10,7 @@ class LMModel(BasicModule):
         super(LMModel, self).__init__()
         self.bert = BertModel.from_pretrained(cfg.model.lm_file, num_hidden_layers=cfg.model.num_hidden_layers)
         self.bilstm = RNN(cfg)
-        self.fc = nn.Linear(cfg.model.hidden_size, cfg.num_relations)
+        self.fc = nn.Linear(cfg.model.hidden_size, cfg.corpus.num_relations)
         self.dropout = nn.Dropout(cfg.model.dropout)
 
     def forward(self, x):

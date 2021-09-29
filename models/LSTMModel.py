@@ -13,7 +13,7 @@ class LSTMModel(BasicModule):
 
         self.embedding = Embedding(cfg)
         self.bilstm = RNN(cfg)
-        self.fc = nn.Linear(cfg.model.hidden_size, cfg.num_relations)
+        self.fc = nn.Linear(cfg.model.hidden_size, cfg.corpus.num_relations)
         self.dropout = nn.Dropout(cfg.model.dropout)
 
     def forward(self, x):

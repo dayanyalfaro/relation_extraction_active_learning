@@ -18,7 +18,7 @@ class CNNModel(BasicModule):
         self.embedding = Embedding(cfg)
         self.cnn = CNN(cfg)
         self.fc1 = nn.Linear(len(cfg.model.kernel_sizes) * cfg.model.out_channels, cfg.model.intermediate)
-        self.fc2 = nn.Linear(cfg.model.intermediate, cfg.num_relations)
+        self.fc2 = nn.Linear(cfg.model.intermediate, cfg.corpus.num_relations)
         self.dropout = nn.Dropout(cfg.model.dropout)
 
     def forward(self, x):

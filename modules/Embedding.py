@@ -12,8 +12,8 @@ class Embedding(nn.Module):
         dim_strategy: [cat, sum]  Whether multiple embeddings are spliced or added
         """
         super(Embedding, self).__init__()
-        if config.use_pretrained:
-            emb_path = os.path.join(config.cwd, config.out_path, 'word2vec.pkl')
+        if config.corpus.use_pretrained:
+            emb_path = os.path.join(config.cwd, config.corpus.out_path, 'word2vec.pkl')
             embedding_vectors = load_pkl(emb_path)
             self.word_dim = embedding_vectors.shape[1] # necessary for pos_dim
         else:
@@ -24,7 +24,7 @@ class Embedding(nn.Module):
         self.pos_dim = config.pos_dim if config.dim_strategy == 'cat' else self.word_dim
         self.dim_strategy = config.dim_strategy
 
-        if config.use_pretrained:
+        if config.corpus.use_pretrained:
             self.wordEmbed = nn.Embedding.from_pretrained(embeddings=embedding_vectors, freeze=False)
         else:
             self.wordEmbed = nn.Embedding(self.vocab_size, self.word_dim, padding_idx=0)

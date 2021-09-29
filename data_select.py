@@ -28,7 +28,7 @@ def random_sample(cur_labeled_ds, unlabeled_ds, model, device, cfg):
 
 def uncertainty_sample(cur_labeled_ds, unlabeled_ds, model, device, cfg):
     model.eval()
-    all_y_pred = np.empty((0, cfg.num_relations))
+    all_y_pred = np.empty((0, cfg.corpus.num_relations))
     for index, one in enumerate(unlabeled_ds):
         one_dataloader = DataLoader([one], collate_fn=collate_fn(cfg))
         (x, y) = next(iter(one_dataloader))

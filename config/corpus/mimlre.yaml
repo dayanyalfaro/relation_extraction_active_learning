@@ -1,0 +1,15 @@
+name: 'mimlre'
+
+# Original data storage location
+data_path: 'data/mimlre'
+
+# File location after preprocessing
+out_path: 'data/mimlre/preprocess'
+
+use_pretrained: False
+pretrained_path: 'glove.6B.bin'
+download_link: "https://nlp.stanford.edu/data/glove.6B.zip"
+zip_path:  "glove.6B.zip"
+
+# Type of relationship
+num_relations: 41

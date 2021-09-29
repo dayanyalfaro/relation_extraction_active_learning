@@ -1,0 +1,15 @@
+name: 'ehealthKD2021'
+
+# Original data storage location
+data_path: 'data/ehealthKD2021'
+
+# File location after preprocessing
+out_path: 'data/ehealthKD2021/preprocess'
+
+use_pretrained: True
+pretrained_path: '/embedding/SBW-vectors-300-min5.txt'
+download_link: "http://cs.famaf.unc.edu.ar/~ccardellino/SBWCE/SBW-vectors-300-min5.txt.bz2"
+zip_path:  "SBW-vectors-300-min5.txt.bz2"
+
+# Type of relationship
+num_relations: 14 
