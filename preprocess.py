@@ -15,6 +15,8 @@ from typing import List, Dict
 from itertools import permutations
 from transformers import BertTokenizer
 from gensim.models.word2vec import KeyedVectors
+from gensim.test.utils import datapath, get_tmpfile
+from gensim.scripts.glove2word2vec import glove2word2vec
 
 from ann_scripts.anntools import Collection
 from utils import save_pkl
@@ -110,7 +112,13 @@ class WordEmbeddingLoader(object):
                 with ZipFile(vec_zip_path, 'r') as zip:
                     zip.extractall(self.path_word)
 
-        wv = KeyedVectors.load_word2vec_format(self.path_word)
+        if self.corpus == 'ehealthKD2021':
+            wv = KeyedVectors.load_word2vec_format(self.path_word)
+        else:
+            glove_file = datapath(self.path_word + 'glove.6B.300d.txt')
+            tmp_file = get_tmpfile(self.path_word + 'glove2word2vec.6B.300d.txt')
+            _ = glove2word2vec(glove_file, tmp_file)
+            wv = KeyedVectors.load_word2vec_format(tmp_file)
 
         word2idx = { w : k + 2 for (w,k) in wv.key_to_index.items()}  # word to wordID
         word2idx['[PAD]'] = 0  # PAD character
