@@ -133,3 +133,4 @@ outputs/
 vocab.txt
 .vscode
 SBW-vectors-300-min5.txt
+glove.6B/
