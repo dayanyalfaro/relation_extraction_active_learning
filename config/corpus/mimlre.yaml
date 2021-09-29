@@ -7,7 +7,7 @@ data_path: 'data/mimlre'
 out_path: 'data/mimlre/preprocess'
 
 use_pretrained: False
-pretrained_path: 'glove.6B.bin'
+pretrained_path: '/embedding/glove.6B.txt'
 download_link: "https://nlp.stanford.edu/data/glove.6B.zip"
 zip_path:  "glove.6B.zip"
 

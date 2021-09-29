@@ -25,7 +25,7 @@ def save_pkl(data, fp, verbose: bool = True):
     if verbose:
         logger.info(f'save data in {fp}')
 
-    with open(fp, 'wb') as f:
+    with open(fp, 'xb') as f:
         pickle.dump(data, f)
 
 def seq_len_to_mask(seq_len, max_len=None, mask_pos_to_true=True):

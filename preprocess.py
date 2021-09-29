@@ -108,7 +108,7 @@ class WordEmbeddingLoader(object):
                         shutil.copyfileobj(f_in, f_out)
             else:
                 with ZipFile(vec_zip_path, 'r') as zip:
-                    zip.extractall(self.path_word)           
+                    zip.extractall(self.path_word)
 
         wv = KeyedVectors.load_word2vec_format(self.path_word)
 
@@ -210,9 +210,7 @@ def _preprocess_collection(collection: Collection,cfg, nlp):
 def _preprocess_dataframe(df,cfg, nlp):
     features = []
     for index, row in df.iterrows():
-        print(index)
         if row['key'] == 'key':
-            print('AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAa')
             continue
         tokens = [token.text for token in nlp(row['sentence'])]
         entity = nlp(row['entity'].strip())[0].text
@@ -268,7 +266,7 @@ def preprocess(cfg):
     else:
         logger.info('load and divide csv dataset...')
         csv_path = Path(os.path.join(cfg.cwd, cfg.corpus.data_path, 'annotated_sentences.csv'))
-        df = pd.read_csv(csv_path)
+        df = pd.read_csv(csv_path).sample(frac = 0.01)
         train_df = df.sample(frac = 0.6, random_state = 1)
         rest_df = df.drop(train_df.index)
         valid_df = rest_df.sample(frac = 0.25, random_state = 1)
