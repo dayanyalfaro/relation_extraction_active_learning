@@ -98,23 +98,28 @@ class WordEmbeddingLoader(object):
         self.path_word = cfg.cwd + cfg.corpus.pretrained_path  # path of pre-trained word embedding
 
     def load_embedding(self):
-        if not os.path.exists(self.path_word):
-            logger.info('Downloading the pretrained embedding')
-            wget.download(self.download_link)
-            vec_zip_path = self.zip_path
-            logger.info('Extracting the pretrained embedding')
+        if self.corpus == 'ehealthKD2021':
+            if not os.path.exists(self.path_word):
+                logger.info('Downloading the pretrained embedding')
+                wget.download(self.download_link)
+                vec_zip_path = self.zip_path
+                logger.info('Extracting the pretrained embedding')
 
-            if self.corpus == 'ehealthKD2021':
                 with bz2.open(vec_zip_path, 'rb') as f_in:
                     with open(self.path_word, 'xb') as f_out:
                         shutil.copyfileobj(f_in, f_out)
-            else:
+
+            wv = KeyedVectors.load_word2vec_format(self.path_word)
+        else:
+            if not os.path.exists(self.path_word):
+                logger.info('Downloading the pretrained embedding')
+                wget.download(self.download_link)
+                vec_zip_path = self.zip_path
+                logger.info('Extracting the pretrained embedding')
+
                 with ZipFile(vec_zip_path, 'r') as zip:
                     zip.extractall(self.path_word)
 
-        if self.corpus == 'ehealthKD2021':
-            wv = KeyedVectors.load_word2vec_format(self.path_word)
-        else:
             glove_file = datapath(self.path_word + 'glove.6B.300d.txt')
             tmp_file = get_tmpfile(self.path_word + 'glove2word2vec.6B.300d.txt')
             _ = glove2word2vec(glove_file, tmp_file)
