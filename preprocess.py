@@ -144,7 +144,7 @@ def _lm_serialize(data: List[Dict], cfg):
         sent = d['sentence'].strip()
         sent = sent.replace(d['head'], d['head_type'], 1).replace(d['tail'], d['tail_type'], 1)
         sent += '[SEP]' + d['head'] + '[SEP]' + d['tail']
-        d['token2idx'] = tokenizer.encode(sent, add_special_tokens=True)
+        d['token2idx'] = tokenizer.encode(sent, add_special_tokens=True)[:512]
         d['seq_len'] = len(d['token2idx'])
 
 def _add_tokens_index(data: List[Dict], word2idx):
