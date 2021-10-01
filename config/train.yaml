@@ -3,10 +3,6 @@ seed: 1
 use_gpu: True
 gpu_id: 0
 
-# Active learning strategy
-select_method: 'random' #['random', 'uncertainty']
-concrete: '' # [[''],['least_confident','margin_sampling','entropy_sampling']]
-
 start_size : 2000 # Amount of labeled samples at the beginning
 select_batch_size : 100
 use_all_train : False
