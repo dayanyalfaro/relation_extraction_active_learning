@@ -66,9 +66,11 @@ def main(cfg):
 
     all_train_ds = load_pkl(train_data_path)
     random.shuffle(all_train_ds)
+    all_train_ds = {index: value for index, value in enumerate(all_train_ds)}
     #cur_labeled_ds = all_train_ds
-    cur_labeled_ds = all_train_ds[:cfg.start_size]
-    unlabeled_ds = all_train_ds[cfg.start_size:]
+    lst = list(all_train_ds.items())
+    cur_labeled_ds = dict(lst[:cfg.start_size])
+    unlabeled_ds = dict(lst[cfg.start_size:])
 
     per_log_num = 400
     all_size = len(all_train_ds)
@@ -81,14 +83,14 @@ def main(cfg):
     test_f1_scores, test_losses = [], []
     while len(cur_labeled_ds) <= all_size:
         model = __Model__[cfg.model.model_name](cfg)
-        if len(cur_labeled_ds) == cfg.start_size: #TODO
+        if len(cur_labeled_ds) == cfg.start_size:
             logger.info(f'\n {model}')
         model.to(device)
         optimizer = optim.Adam(model.parameters(), lr=cfg.learning_rate, weight_decay=cfg.weight_decay)
         scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor=cfg.lr_factor, patience=cfg.lr_patience)
         criterion = nn.CrossEntropyLoss()
 
-        train_dataloader = DataLoader(cur_labeled_ds, batch_size=cfg.batch_size, shuffle=True,
+        train_dataloader = DataLoader(list(cur_labeled_ds.values()), batch_size=cfg.batch_size, shuffle=True,
                                       collate_fn=collate_fn(cfg))
 
         train_losses, valid_losses, one_f1_scores = [], [], []

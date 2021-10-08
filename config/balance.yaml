@@ -1,0 +1,7 @@
+balance: True
+
+class_strategy: "knn" #['knn']
+
+pre_batch_size: 150
+
+neighbors: 10

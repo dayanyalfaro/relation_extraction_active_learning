@@ -22,3 +22,15 @@ class LMModel(BasicModule):
         output = self.fc(out_pool)
 
         return output
+
+class LMFcExtractor(nn.Module):
+    def __init__(self,submodule):
+        super(LMFcExtractor, self).__init__()
+        self.submodule = submodule
+
+    def forward(self,x):
+        word, lens = x['word'], x['lens']
+        mask = seq_len_to_mask(lens, mask_pos_to_true=False)
+        output = self.bert(word, attention_mask=mask)
+        out, out_pool = self.bilstm(output.last_hidden_state, lens)
+        return out_pool
