@@ -42,6 +42,39 @@ class QueryBase(metaclass=ABCMeta):
     def pre_sample(self, *args):
         pass
 
+    def predict_prob (self, model, unlabeled_ds):
+        model.eval()
+        all_y_pred = torch.empty((0, self.num_relations))
+        for index, one in enumerate(unlabeled_ds.values()):
+            one_dataloader = DataLoader([one], collate_fn=collate_fn(self.cfg))
+            (x, y) = next(iter(one_dataloader))
+            for key, value in x.items():
+                x[key] = value.to(self.device)
+            with torch.no_grad():
+                y_pred = model(x)
+            y_pred = y_pred.cpu().detach()
+            all_y_pred = torch.cat((all_y_pred, y_pred), 0)
+
+        all_y_pred_probability = nn.functional.softmax(all_y_pred, dim=1)
+        return all_y_pred_probability
+
+    def predict_prob_dropout (self, model, unlabeled_ds):
+        model.train()
+        probs = torch.zeros([len(unlabeled_ds),self.num_relations])
+
+        for i in range(self.n_drop):
+            for index, one in enumerate(unlabeled_ds.values()):
+                one_dataloader = DataLoader([one], collate_fn=collate_fn(self.cfg))
+                (x, y) = next(iter(one_dataloader))
+                for key, value in x.items():
+                    x[key] = value.to(self.device)
+                with torch.no_grad():
+                    y_pred = model(x)
+                    prob = nn.functional.softmax(y_pred, dim=1)
+                probs[index] += prob.cpu()[0]
+        probs /= self.n_drop
+        return probs
+
     def predict_classes(self,pre_select, cur_labeled_ds, unlabeled_ds, model):
         classes = {}
         # extractor = LMFcExtractor(model)
@@ -84,7 +117,7 @@ class QueryBase(metaclass=ABCMeta):
                         for key, value in x.items():
                             x[key] = value.to(self.device)
                             with torch.no_grad():
-                                feature = np.array(extractor(x).cpu().detach())
+                                feature = np.array(model(x).cpu().detach())
 
                         d_j, inds_j = nbrs_j.kneighbors(feature)
                         d_no_j, inds_no_j = nbrs_no_j.kneighbors(feature)
@@ -99,6 +132,13 @@ class QueryBase(metaclass=ABCMeta):
                 clss = lst.index(min(lst))
                 classes[index] = clss
 
+        elif self.class_strategy == 'prob':
+            pre_dict = { idx : unlabeled_ds[idx] for idx in pre_select}
+            probs = self.predict_prob(model,pre_dict)
+            
+            for idx, item in enumerate(pre_select):
+                classes[item] = int(probs[idx].argmax())
+                
         return classes
 
 
@@ -147,39 +187,6 @@ class QueryUncertainty(QueryBase):
         self.n_drop = cfg.strategy.n_drop
         self.use_dropout = cfg.strategy.use_dropout
         self.cfg = cfg
-
-    def predict_prob (self, model, unlabeled_ds):
-        model.eval()
-        all_y_pred = torch.empty((0, self.num_relations))
-        for index, one in enumerate(unlabeled_ds.values()):
-            one_dataloader = DataLoader([one], collate_fn=collate_fn(self.cfg))
-            (x, y) = next(iter(one_dataloader))
-            for key, value in x.items():
-                x[key] = value.to(self.device)
-            with torch.no_grad():
-                y_pred = model(x)
-            y_pred = y_pred.cpu().detach()
-            all_y_pred = torch.cat((all_y_pred, y_pred), 0)
-
-        all_y_pred_probability = nn.functional.softmax(all_y_pred, dim=1)
-        return all_y_pred_probability
-
-    def predict_prob_dropout (self, model, unlabeled_ds):
-        model.train()
-        probs = torch.zeros([len(unlabeled_ds),self.num_relations])
-
-        for i in range(self.n_drop):
-            for index, one in enumerate(unlabeled_ds.values()):
-                one_dataloader = DataLoader([one], collate_fn=collate_fn(self.cfg))
-                (x, y) = next(iter(one_dataloader))
-                for key, value in x.items():
-                    x[key] = value.to(self.device)
-                with torch.no_grad():
-                    y_pred = model(x)
-                    prob = nn.functional.softmax(y_pred, dim=1)
-                probs[index] += prob.cpu()[0]
-        probs /= self.n_drop
-        return probs
 
     def pre_sample(self,cur_labeled_ds, unlabeled_ds, model):
         if self.use_dropout:
