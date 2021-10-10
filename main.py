@@ -109,7 +109,7 @@ def main(cfg):
             one_f1_scores.append(valid_f1)
 
         if cfg.show_plot and cfg.plot_utils == 'tensorboard' and (len(cur_labeled_ds) - cfg.start_size) % per_log_num == 0:
-            logger.info(f'one_f1_scores:{one_f1_scores}') 
+            logger.info(f'one_f1_scores:{one_f1_scores}')
             for i in range(len(train_losses)):
                 writer.add_scalars(f'valid_copy/valid_loss_{len(cur_labeled_ds)}', {
                     'train': train_losses[i],

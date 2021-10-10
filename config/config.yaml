@@ -7,9 +7,9 @@ cwd: ???
 
 
 defaults:
-  - model: cnn # [cnn, rnn, lm]
+  - model: lm # [cnn, rnn, lm]
   - corpus: mimlre
-  - strategy: random
+  - strategy: 'uncertainty'
   - embedding
   - preprocess
   - train

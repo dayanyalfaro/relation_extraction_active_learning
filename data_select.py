@@ -1,3 +1,4 @@
+import math
 import torch
 import heapq
 import random
@@ -5,7 +6,6 @@ import logging
 import numpy as np
 
 from torch import nn
-from torch._C import preserve_format
 from torch.utils.data import DataLoader
 from abc import ABCMeta, abstractmethod
 from sklearn.neighbors import NearestNeighbors
@@ -44,7 +44,8 @@ class QueryBase(metaclass=ABCMeta):
 
     def predict_classes(self,pre_select, cur_labeled_ds, unlabeled_ds, model):
         classes = {}
-        extractor = LMFcExtractor(model)
+        # extractor = LMFcExtractor(model)
+        model.eval()
 
         if self.class_strategy == 'knn':
             features = {}
@@ -56,8 +57,8 @@ class QueryBase(metaclass=ABCMeta):
                 for key, value in x.items():
                     x[key] = value.to(self.device)
                     with torch.no_grad():
-                        feature = extractor(x).cpu().detach()
-                        features[index]['feature'] = np.array(feature)
+                        feature = model(x).cpu().detach()
+                        features[index]['feature'] = np.array(feature[0])
                         features[index]['class'] = rel['rel2idx']
 
             ratio = { index: [] for index in pre_select}
@@ -72,21 +73,26 @@ class QueryBase(metaclass=ABCMeta):
                     else:
                         class_no_j.append(rel['feature'])
 
-                nbrs_j = NearestNeighbors(n_neighbors=self.neighbors, algorithm='auto').fit(np.array(class_j))
-                nbrs_no_j = NearestNeighbors(n_neighbors=self.neighbors, algorithm='auto').fit(np.array(class_no_j))
+                if len(class_j):
+                    cant = min(len(class_j), len(class_no_j), self.neighbors)
+                    nbrs_j = NearestNeighbors(n_neighbors=cant, algorithm='auto').fit(np.array(class_j))
+                    nbrs_no_j = NearestNeighbors(n_neighbors=cant, algorithm='auto').fit(np.array(class_no_j))
 
-                for index in pre_select:
-                    one_dataloader = DataLoader([unlabeled_ds[index]], collate_fn=collate_fn(self.cfg))
-                    (x, y) = next(iter(one_dataloader))
-                    for key, value in x.items():
-                        x[key] = value.to(self.device)
-                        with torch.no_grad():
-                            feature = np.array(extractor(x).cpu().detach())
+                    for index in pre_select:
+                        one_dataloader = DataLoader([unlabeled_ds[index]], collate_fn=collate_fn(self.cfg))
+                        (x, y) = next(iter(one_dataloader))
+                        for key, value in x.items():
+                            x[key] = value.to(self.device)
+                            with torch.no_grad():
+                                feature = np.array(extractor(x).cpu().detach())
 
-                    d_j, inds_j = nbrs_j.kneighbors(feature)
-                    d_no_j, inds_no_j = nbrs_no_j.kneighbors(feature)
+                        d_j, inds_j = nbrs_j.kneighbors(feature)
+                        d_no_j, inds_no_j = nbrs_no_j.kneighbors(feature)
 
-                    ratio[index].append(d_j.sum()/d_no_j.sum())
+                        ratio[index].append(d_j.sum()/d_no_j.sum())
+                else:
+                    for index in pre_select:
+                        ratio[index].append(math.inf)
 
             for index in pre_select:
                 lst = ratio[index]
@@ -104,7 +110,14 @@ class QueryBase(metaclass=ABCMeta):
             j = rel['rel2idx']
             cants[j] += 1
 
-        weights = [1/(self.num_relations * c_j / total) for c_j in cants]
+        weights = []
+
+        for c_j in cants:
+            if c_j:
+                weights.append(1/(self.num_relations * c_j / total))
+            else:
+                weights.append(math.inf)
+
         return weights
 
     def balance_sample(self, pre_select, values, classes, balance_weights):
@@ -131,12 +144,14 @@ class QueryUncertainty(QueryBase):
     def __init__(self, cfg, device):
         super().__init__(cfg, device)
         self.type = cfg.strategy.type
+        self.n_drop = cfg.strategy.n_drop
+        self.use_dropout = cfg.strategy.use_dropout
         self.cfg = cfg
 
     def predict_prob (self, model, unlabeled_ds):
         model.eval()
         all_y_pred = torch.empty((0, self.num_relations))
-        for index, one in enumerate(unlabeled_ds):
+        for index, one in enumerate(unlabeled_ds.values()):
             one_dataloader = DataLoader([one], collate_fn=collate_fn(self.cfg))
             (x, y) = next(iter(one_dataloader))
             for key, value in x.items():
@@ -149,8 +164,28 @@ class QueryUncertainty(QueryBase):
         all_y_pred_probability = nn.functional.softmax(all_y_pred, dim=1)
         return all_y_pred_probability
 
+    def predict_prob_dropout (self, model, unlabeled_ds):
+        model.train()
+        probs = torch.zeros([len(unlabeled_ds),self.num_relations])
+
+        for i in range(self.n_drop):
+            for index, one in enumerate(unlabeled_ds.values()):
+                one_dataloader = DataLoader([one], collate_fn=collate_fn(self.cfg))
+                (x, y) = next(iter(one_dataloader))
+                for key, value in x.items():
+                    x[key] = value.to(self.device)
+                with torch.no_grad():
+                    y_pred = model(x)
+                    prob = nn.functional.softmax(y_pred, dim=1)
+                probs[index] += prob.cpu()[0]
+        probs /= self.n_drop
+        return probs
+
     def pre_sample(self,cur_labeled_ds, unlabeled_ds, model):
-        probs = self.predict_prob(model, unlabeled_ds)
+        if self.use_dropout:
+            probs = self.predict_prob_dropout(model, unlabeled_ds)
+        else:
+            probs = self.predict_prob(model, unlabeled_ds)
         select = None
         values = None
         U = None

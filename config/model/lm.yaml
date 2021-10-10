@@ -4,6 +4,7 @@ model_name: lm
 # lm_name = 'bert-base-chinese'  # download usage
 #lm_file: 'pretrained'
 lm_file: 'bert-base-multilingual-cased'
+offline: True
 
 # The number of transformer layers, the initial base bert is 12 layers
 # However, when the amount of data is small, it is better to reduce it and converge faster.
