@@ -137,9 +137,131 @@ class WordEmbeddingLoader(object):
 
         return word2idx, embedding_matrix
 
+def _encoder_serialize(data: List[Dict], cfg):
+    """
+    Implement the following input formats:
+        - entity_mask: [SUBJ-NER], [OBJ-NER].
+        - entity_marker: [E1] subject [/E1], [E2] object [/E2].
+        - entity_marker_punct: @ subject @, # object #.
+        - typed_entity_marker: [SUBJ-NER] subject [/SUBJ-NER], [OBJ-NER] obj [/OBJ-NER]
+        - typed_entity_marker_punct: @ * subject ner type * subject @, # ^ object ner type ^ object #
+    """
+    logger.info('use bert tokenizer...')
+    
+    input_format = cfg.model.input_format
+
+    if cfg.model.offline:
+        tokenizer = BertTokenizer.from_pretrained(cfg.cwd + '/embedding/bert-base-multilingual-cased/')
+    else:
+        tokenizer = BertTokenizer.from_pretrained(cfg.model.lm_file)
+
+    new_tokens = []
+    if input_format == 'entity_marker':
+        new_tokens = ['[E1]', '[/E1]', '[E2]', '[/E2]']
+        tokenizer.add_tokens(new_tokens)
+
+    for d in data:
+        sents = []
+        tokens, subj_type, obj_type = d['tokens'], d['head_type'], d['tail_type']
+        ss, se, ostart, oe =  d['head_start'], d['head_end'], d['tail_start'], d['tail_end']
+
+        if input_format == 'entity_mask':
+            subj_type = '[SUBJ-{}]'.format(subj_type)
+            obj_type = '[OBJ-{}]'.format(obj_type)
+            for token in (subj_type, obj_type):
+                if token not in new_tokens:
+                    new_tokens.append(token)
+                    tokenizer.add_tokens([token])
+        elif input_format == 'typed_entity_marker':
+            subj_start = '[SUBJ-{}]'.format(subj_type)
+            subj_end = '[/SUBJ-{}]'.format(subj_type)
+            obj_start = '[OBJ-{}]'.format(obj_type)
+            obj_end = '[/OBJ-{}]'.format(obj_type)
+            for token in (subj_start, subj_end, obj_start, obj_end):
+                if token not in new_tokens:
+                    new_tokens.append(token)
+                    tokenizer.add_tokens([token])
+        elif input_format == 'typed_entity_marker_punct':
+            subj_type = tokenizer.tokenize(subj_type.replace("_", " ").lower())
+            obj_type = tokenizer.tokenize(obj_type.replace("_", " ").lower())
+
+        for i_t, token in enumerate(tokens):
+            tokens_wordpiece = tokenizer.tokenize(token)
+
+            if input_format == 'entity_mask':
+                if ss <= i_t <= se or os <= i_t <= oe:
+                    tokens_wordpiece = []
+                    if i_t == ss:
+                        new_ss = len(sents)
+                        tokens_wordpiece = [subj_type]
+                    if i_t == ostart:
+                        new_os = len(sents)
+                        tokens_wordpiece = [obj_type]
+
+            elif input_format == 'entity_marker':
+                if i_t == ss:
+                    new_ss = len(sents)
+                    tokens_wordpiece = ['[E1]'] + tokens_wordpiece
+                if i_t == se:
+                    tokens_wordpiece = tokens_wordpiece + ['[/E1]']
+                if i_t == ostart:
+                    new_os = len(sents)
+                    tokens_wordpiece = ['[E2]'] + tokens_wordpiece
+                if i_t == oe:
+                    tokens_wordpiece = tokens_wordpiece + ['[/E2]']
+
+            elif input_format == 'entity_marker_punct':
+                if i_t == ss:
+                    new_ss = len(sents)
+                    tokens_wordpiece = ['@'] + tokens_wordpiece
+                if i_t == se:
+                    tokens_wordpiece = tokens_wordpiece + ['@']
+                if i_t == ostart:
+                    new_os = len(sents)
+                    tokens_wordpiece = ['#'] + tokens_wordpiece
+                if i_t == oe:
+                    tokens_wordpiece = tokens_wordpiece + ['#']
+
+            elif input_format == 'typed_entity_marker':
+                if i_t == ss:
+                    new_ss = len(sents)
+                    tokens_wordpiece = [subj_start] + tokens_wordpiece
+                if i_t == se:
+                    tokens_wordpiece = tokens_wordpiece + [subj_end]
+                if i_t == ostart:
+                    new_os = len(sents)
+                    tokens_wordpiece = [obj_start] + tokens_wordpiece
+                if i_t == oe:
+                    tokens_wordpiece = tokens_wordpiece + [obj_end]
+
+            elif input_format == 'typed_entity_marker_punct':
+                if i_t == ss:
+                    new_ss = len(sents)
+                    tokens_wordpiece = ['@'] + ['*'] + subj_type + ['*'] + tokens_wordpiece
+                if i_t == se:
+                    tokens_wordpiece = tokens_wordpiece + ['@']
+                if i_t == ostart:
+                    new_os = len(sents)
+                    tokens_wordpiece = ["#"] + ['^'] + obj_type + ['^'] + tokens_wordpiece
+                if i_t == oe:
+                    tokens_wordpiece = tokens_wordpiece + ["#"]
+
+            sents.extend(tokens_wordpiece)
+
+        sents = sents[:cfg.model.max_seq_length - 2]
+        input_ids = tokenizer.convert_tokens_to_ids(sents)
+        input_ids = tokenizer.build_inputs_with_special_tokens(input_ids)
+        d['token2idx'] = input_ids
+        d['seq_len'] = len(d['token2idx'])
+        d['head_start'] =  new_ss + 1
+        d['tail_start'] =  new_os + 1
+
 def _lm_serialize(data: List[Dict], cfg):
     logger.info('use bert tokenizer...')
-    tokenizer = BertTokenizer.from_pretrained(cfg.model.lm_file)
+    if cfg.model.offline:
+        tokenizer = BertTokenizer.from_pretrained(cfg.cwd + '/embedding/bert-base-multilingual-cased/')
+    else:
+        tokenizer = BertTokenizer.from_pretrained(cfg.model.lm_file)
     for d in data:
         sent = d['sentence'].strip()
         sent = sent.replace(d['head'], d['head_type'], 1).replace(d['tail'], d['tail_type'], 1)
@@ -295,6 +417,11 @@ def preprocess(cfg):
         _lm_serialize(train_data, cfg)
         _lm_serialize(valid_data, cfg)
         _lm_serialize(test_data, cfg)
+    elif cfg.model.model_name == 'encoder':
+        logger.info('use pretrained language model serialize sentence...')
+        _encoder_serialize(train_data, cfg)
+        _encoder_serialize(valid_data, cfg)
+        _encoder_serialize(test_data, cfg)
     else:
         if cfg.corpus.use_pretrained:
             logger.info('load word embedding...')
