@@ -23,8 +23,8 @@ def collate_fn(cfg):
             word_len.append(data['seq_len'])
 
             if cfg.model.model_name == 'encoder':
-                head_start.append(data['head_start'])
-                tail_start.append(data['tail_start'])
+                head_start.append(int(data['head_start']))
+                tail_start.append(int(data['tail_start']))
 
             y.append(int(data['rel2idx']))
 

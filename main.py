@@ -48,12 +48,12 @@ def main(cfg):
     if cfg.preprocess:
         preprocess(cfg)
 
-    train_data_path = os.path.join(cfg.cwd, cfg.corpus.out_path, 'train.pkl')
-    valid_data_path = os.path.join(cfg.cwd, cfg.corpus.out_path, 'valid.pkl')
-    test_data_path = os.path.join(cfg.cwd, cfg.corpus.out_path, 'test.pkl')
-    vocab_path = os.path.join(cfg.cwd, cfg.corpus.out_path, 'vocab.pkl')
+    train_data_path = os.path.join(cfg.cwd, cfg.corpus.out_path, cfg.model.model_name, 'train.pkl')
+    valid_data_path = os.path.join(cfg.cwd, cfg.corpus.out_path, cfg.model.model_name, 'valid.pkl')
+    test_data_path = os.path.join(cfg.cwd, cfg.corpus.out_path, cfg.model.model_name, 'test.pkl')
+    vocab_path = os.path.join(cfg.cwd, cfg.corpus.out_path, cfg.model.model_name, 'vocab.pkl')
 
-    if cfg.model.model_name == 'lm':
+    if cfg.model.model_name in ('lm', 'encoder'):
         vocab_size = None
     else:
         vocab = load_pkl(vocab_path)

@@ -248,10 +248,10 @@ def _encoder_serialize(data: List[Dict], cfg):
 
             sents.extend(tokens_wordpiece)
 
-        # sents = sents[:cfg.model.max_seq_length - 2]
+        sents = sents[:cfg.model.max_seq_length - 2]
         input_ids = tokenizer.convert_tokens_to_ids(sents)
         input_ids = tokenizer.build_inputs_with_special_tokens(input_ids)
-        d['token2idx'] = input_ids[:512]
+        d['token2idx'] = input_ids
         d['seq_len'] = len(d['token2idx'])
         d['head_start'] =  new_ss + 1
         d['tail_start'] =  new_os + 1
@@ -401,7 +401,7 @@ def preprocess(cfg):
     else:
         logger.info('load and divide csv dataset...')
         csv_path = Path(os.path.join(cfg.cwd, cfg.corpus.data_path, 'annotated_sentences.csv'))
-        df = pd.read_csv(csv_path) # .sample(frac = 0.01)
+        df = pd.read_csv(csv_path).sample(frac = 0.01)
         train_df = df.sample(frac = 0.6, random_state = 1)
         rest_df = df.drop(train_df.index)
         valid_df = rest_df.sample(frac = 0.25, random_state = 1)
@@ -429,7 +429,7 @@ def preprocess(cfg):
             cfg.word_dim = word_vec.shape[1]
 
             logger.info('save word2vec file...')
-            word_vec_save_fp = os.path.join(cfg.cwd, cfg.corpus.out_path, 'word2vec.pkl')
+            word_vec_save_fp = os.path.join(cfg.cwd, cfg.corpus.out_path, cfg.model.model_name ,'word2vec.pkl')
             save_pkl(word_vec, word_vec_save_fp)
         else:
             logger.info('build vocabulary...')
@@ -444,8 +444,8 @@ def preprocess(cfg):
             word2idx = vocab.word2idx
 
             logger.info('save vocab file...')
-            vocab_save_fp = os.path.join(cfg.cwd, cfg.corpus.out_path, 'vocab.pkl')
-            vocab_txt = os.path.join(cfg.cwd, cfg.corpus.out_path, 'vocab.txt')
+            vocab_save_fp = os.path.join(cfg.cwd, cfg.corpus.out_path, cfg.model.model_name, 'vocab.pkl')
+            vocab_txt = os.path.join(cfg.cwd, cfg.corpus.out_path, cfg.model.model_name, 'vocab.txt')
             save_pkl(vocab, vocab_save_fp)
             logger.info('save vocab in txt file, for watching...')
             with open(vocab_txt, 'w', encoding='utf-8') as f:
@@ -462,10 +462,10 @@ def preprocess(cfg):
         _add_pos_seq(test_data, cfg)
 
     logger.info('save data for backup...')
-    os.makedirs(os.path.join(cfg.cwd, cfg.corpus.out_path), exist_ok=True)
-    train_save_fp = os.path.join(cfg.cwd, cfg.corpus.out_path, 'train.pkl')
-    valid_save_fp = os.path.join(cfg.cwd, cfg.corpus.out_path, 'valid.pkl')
-    test_save_fp = os.path.join(cfg.cwd, cfg.corpus.out_path, 'test.pkl')
+    os.makedirs(os.path.join(cfg.cwd, cfg.corpus.out_path, cfg.model.model_name), exist_ok=True)
+    train_save_fp = os.path.join(cfg.cwd, cfg.corpus.out_path, cfg.model.model_name, 'train.pkl')
+    valid_save_fp = os.path.join(cfg.cwd, cfg.corpus.out_path, cfg.model.model_name, 'valid.pkl')
+    test_save_fp = os.path.join(cfg.cwd, cfg.corpus.out_path, cfg.model.model_name, 'test.pkl')
     save_pkl(train_data, train_save_fp)
     save_pkl(valid_data, valid_save_fp)
     save_pkl(test_data, test_save_fp)

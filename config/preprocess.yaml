@@ -1,6 +1,6 @@
 # Do you need to preprocess the data
 # When the data processing parameters are not changed, there is no need to pre-process
-preprocess: False
+preprocess: True
 
 # Sentence length limit: Refers to the position limit of the relative entity of the word in the sentence
 # For example: [-30, 30], when embed, the overall +31 becomes [1, 61]
