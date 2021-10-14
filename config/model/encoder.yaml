@@ -1,7 +1,7 @@
 model_name: encoder
 
 lm_file: 'bert-base-multilingual-cased'
-offline: True
+offline: False
 
 dropout: 0.5
 
