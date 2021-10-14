@@ -1,5 +1,7 @@
 seed: 1
 
+active_learning: True
+
 use_gpu: True
 gpu_id: 0
 
