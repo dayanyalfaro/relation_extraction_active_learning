@@ -14,13 +14,17 @@ def collate_fn(cfg):
 
         x, y = dict(), []
         word, word_len = [], []
+        head_start, tail_start = [], []  
         head_pos, tail_pos = [], []
-        pcnn_mask = []
         for data in batch:
             # Perform zero-padded operations for sentences of non-maximum length in the current batch
             # TODO Is this batch all data or
             word.append(_padding(data['token2idx'], max_len))
             word_len.append(data['seq_len'])
+
+            if cfg.model.model_name == 'encoder':
+                head_start.append(data['head_start'])
+                tail_start.append(data['tail_start'])
 
             y.append(int(data['rel2idx']))
 
@@ -31,11 +35,13 @@ def collate_fn(cfg):
                 head_pos.append(_padding(data['head_pos'], max_len))
                 tail_pos.append(_padding(data['tail_pos'], max_len))
 
-        # The data of each sample is divided by jieba into the ID corresponding to the phrase and the length of the sentence
-        #          The label is the relationship ID, such as the ancestral home corresponding to 3
         x['word'] = torch.tensor(word)
         x['lens'] = torch.tensor(word_len)
         y = torch.tensor(y)
+
+        if cfg.model.model_name == 'encoder':
+            x['head_start'] = torch.tensor(head_start)
+            x['tail_start'] = torch.tensor(tail_start)
 
         if cfg.model.model_name not in ('lm', 'encoder'):
             x['head_pos'] = torch.tensor(head_pos)
