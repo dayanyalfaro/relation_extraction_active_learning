@@ -25,16 +25,16 @@ class EncoderModel(BasicModule):
 
     def forward(self, x):
         word, lens = x['word'], x['lens']
-        ss, os = x['head_start'], x['tail_start']
+        ss, ost = x['head_start'], x['tail_start']
         mask = seq_len_to_mask(lens, mask_pos_to_true=False)
         outputs = self.encoder(
             word,
             attention_mask=mask,
         )
-        pooled_output = outputs[0]
+        pooled_output = outputs.last_hidden_state
         idx = torch.arange(word.size(0)).to(word.device)
         ss_emb = pooled_output[idx, ss]
-        os_emb = pooled_output[idx, os]
+        os_emb = pooled_output[idx, ost]
         h = torch.cat((ss_emb, os_emb), dim=-1)
         logits = self.classifier(h)
 
