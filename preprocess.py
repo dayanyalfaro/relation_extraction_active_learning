@@ -401,7 +401,7 @@ def preprocess(cfg):
     else:
         logger.info('load and divide csv dataset...')
         csv_path = Path(os.path.join(cfg.cwd, cfg.corpus.data_path, 'annotated_sentences.csv'))
-        df = pd.read_csv(csv_path).sample(frac = 0.01)
+        df = pd.read_csv(csv_path) # .sample(frac = 0.01)
         train_df = df.sample(frac = 0.6, random_state = 1)
         rest_df = df.drop(train_df.index)
         valid_df = rest_df.sample(frac = 0.25, random_state = 1)
