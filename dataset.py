@@ -24,7 +24,7 @@ def collate_fn(cfg):
 
             y.append(int(data['rel2idx']))
 
-            if cfg.model.model_name != 'lm':
+            if cfg.model.model_name not in ('lm', 'encoder'):
                 # print(data.items())
                 # if 'head_pos' not in d:
 
@@ -37,7 +37,7 @@ def collate_fn(cfg):
         x['lens'] = torch.tensor(word_len)
         y = torch.tensor(y)
 
-        if cfg.model.model_name != 'lm':
+        if cfg.model.model_name not in ('lm', 'encoder'):
             x['head_pos'] = torch.tensor(head_pos)
             x['tail_pos'] = torch.tensor(tail_pos)
 
