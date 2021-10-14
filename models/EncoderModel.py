@@ -31,7 +31,7 @@ class EncoderModel(BasicModule):
             word,
             attention_mask=mask,
         )
-        pooled_output = outputs[0]
+        pooled_output = output.last_hidden_state
         idx = torch.arange(word.size(0)).to(word.device)
         ss_emb = pooled_output[idx, ss]
         os_emb = pooled_output[idx, os]
