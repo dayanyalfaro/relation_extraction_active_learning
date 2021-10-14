@@ -248,10 +248,10 @@ def _encoder_serialize(data: List[Dict], cfg):
 
             sents.extend(tokens_wordpiece)
 
-        sents = sents[:cfg.model.max_seq_length - 2]
+        # sents = sents[:cfg.model.max_seq_length - 2]
         input_ids = tokenizer.convert_tokens_to_ids(sents)
         input_ids = tokenizer.build_inputs_with_special_tokens(input_ids)
-        d['token2idx'] = input_ids
+        d['token2idx'] = input_ids[:512]
         d['seq_len'] = len(d['token2idx'])
         d['head_start'] =  new_ss + 1
         d['tail_start'] =  new_os + 1
