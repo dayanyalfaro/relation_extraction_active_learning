@@ -84,7 +84,10 @@ def main(cfg):
 
     logger.info('=' * 10 + ' Start training ' + '=' * 10)
     test_f1_scores, test_losses = [], []
-    while len(cur_labeled_ds) <= all_size:
+    n_iter = 0
+    # while len(cur_labeled_ds) <= all_size:
+    while n_iter <= cfg.total_iter:
+        n_iter += 1
         model = __Model__[cfg.model.model_name](cfg)
         if (not cfg.active_learning) or len(cur_labeled_ds) == cfg.start_size:
             logger.info(f'\n {model}')
