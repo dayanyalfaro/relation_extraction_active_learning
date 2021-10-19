@@ -1,10 +1,12 @@
 model_name: encoder
 
 lm_file: 'bert-base-multilingual-cased'
-offline: False
+offline: True
 
 dropout: 0.5
 
 input_format: 'entity_marker'
 
 max_seq_length: 100
+
+num_hidden_layers: 1

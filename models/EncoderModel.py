@@ -2,7 +2,7 @@ import torch
 from torch import nn
 from transformers.file_utils import PT_SAMPLE_DOCSTRINGS
 from . import BasicModule
-from transformers import AutoConfig, AutoModel
+from transformers import AutoConfig, AutoModel, BertModel, BertTokenizer
 from utils import seq_len_to_mask
 
 
@@ -10,18 +10,22 @@ class EncoderModel(BasicModule):
     def __init__(self, cfg):
         super(EncoderModel, self).__init__()
         if cfg.model.offline:
-            config = AutoConfig.from_pretrained(cfg.cwd + '/embedding/bert-base-multilingual-cased/', num_labels=cfg.corpus.num_relations)
-            self.encoder = AutoModel.from_pretrained(cfg.cwd + '/embedding/bert-base-multilingual-cased/', config=config)
+            # config = AutoConfig.from_pretrained(cfg.cwd + '/embedding/bert-base-multilingual-cased/', num_labels=cfg.corpus.num_relations)
+            # self.encoder = AutoModel.from_pretrained(cfg.cwd + '/embedding/bert-base-multilingual-cased/', config=config)
+            self.encoder = BertModel.from_pretrained(cfg.cwd + '/embedding/bert-base-multilingual-cased/', num_hidden_layers=cfg.model.num_hidden_layers)
         else:
-            config = AutoConfig.from_pretrained(cfg.model.lm_file, num_labels=cfg.corpus.num_relations)
-            self.encoder = AutoModel.from_pretrained(cfg.model.lm_file, config=config)
-        hidden_size = config.hidden_size
+            # config = AutoConfig.from_pretrained(cfg.model.lm_file, num_labels=cfg.corpus.num_relations)
+            # self.encoder = AutoModel.from_pretrained(cfg.model.lm_file, config=config)
+            self.encoder = BertModel.from_pretrained(cfg.model.lm_file, num_hidden_layers=cfg.model.num_hidden_layers)
+        hidden_size = 768 # config.hidden_size
         self.classifier = nn.Sequential(
             nn.Linear(2 * hidden_size, hidden_size),
             nn.ReLU(),
             nn.Dropout(p=cfg.model.dropout),
             nn.Linear(hidden_size, cfg.corpus.num_relations)
         )
+        tokenizer = BertTokenizer.from_pretrained(cfg.cwd + cfg.corpus.out_path + cfg.model.model_name)
+        self.encoder.resize_token_embeddings(len(tokenizer))
 
     def forward(self, x):
         word, lens = x['word'], x['lens']

@@ -1,6 +1,6 @@
 seed: 1
 
-active_learning: True
+active_learning: False
 
 use_gpu: True
 gpu_id: 0
