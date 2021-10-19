@@ -256,7 +256,7 @@ def _encoder_serialize(data: List[Dict], cfg):
         d['seq_len'] = len(d['token2idx'])
         d['head_start'] =  new_ss + 1
         d['tail_start'] =  new_os + 1
-    tokenizer.save_pretrained(cfg.cwd + cfg.corpus.out_path + cfg.model.model_name)
+    tokenizer.save_pretrained(cfg.cwd + '/' + cfg.corpus.out_path + '/' + cfg.model.model_name)
 
 def _lm_serialize(data: List[Dict], cfg):
     logger.info('use bert tokenizer...')
@@ -403,7 +403,7 @@ def preprocess(cfg):
     else:
         logger.info('load and divide csv dataset...')
         csv_path = Path(os.path.join(cfg.cwd, cfg.corpus.data_path, 'annotated_sentences.csv'))
-        df = pd.read_csv(csv_path).sample(frac = 0.01)
+        df = pd.read_csv(csv_path)
         train_df = df.sample(frac = 0.6, random_state = 1)
         rest_df = df.drop(train_df.index)
         valid_df = rest_df.sample(frac = 0.25, random_state = 1)

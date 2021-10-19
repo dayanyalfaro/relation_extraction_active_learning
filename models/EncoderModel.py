@@ -24,7 +24,7 @@ class EncoderModel(BasicModule):
             nn.Dropout(p=cfg.model.dropout),
             nn.Linear(hidden_size, cfg.corpus.num_relations)
         )
-        tokenizer = BertTokenizer.from_pretrained(cfg.cwd + cfg.corpus.out_path + cfg.model.model_name)
+        tokenizer = BertTokenizer.from_pretrained(cfg.cwd + '/' + cfg.corpus.out_path + '/' + cfg.model.model_name)
         self.encoder.resize_token_embeddings(len(tokenizer))
 
     def forward(self, x):
