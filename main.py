@@ -36,7 +36,9 @@ def main(cfg):
 
     __Select__ = {
         'random': data_select.QueryRandom,
-        'uncertainty': data_select.QueryUncertainty
+        'uncertainty': data_select.QueryUncertainty,
+        'bald': data_select.QueryBALD,
+        'kmeans': data_select.QueryKMeans
     }
 
     # device

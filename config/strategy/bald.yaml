@@ -1,0 +1,4 @@
+name: 'bald'
+
+use_dropout: True
+n_drop: 10
