@@ -43,7 +43,7 @@ def train(epoch, model, dataloader, optimizer, criterion, device, writer, cfg):
     total_loss = sum(losses) / len(losses)
     logger.info(f'Train Epoch {epoch}: [{data_total}/{data_total}](100%)\t Loss: {total_loss:.6f}\t'
                     f'metrics: [p: {p:.4f}, r:{r:.4f}, f1:{f1:.4f}, acc:{acc:.4f}]')
-    return total_loss
+    return acc, p, r, f1, total_loss
 
 
 def validate(epoch, model, dataloader, criterion, device, cfg):
@@ -76,4 +76,4 @@ def validate(epoch, model, dataloader, criterion, device, cfg):
         logger.info(f'Test Data: [{data_total}/{data_total}](100%)\t Loss: {loss:.6f}\t'
                     f'metrics: [p: {p:.4f}, r:{r:.4f}, f1:{f1:.4f}, acc:{acc:.4f}]')
 
-    return f1, loss
+    return acc, p, r, f1, loss

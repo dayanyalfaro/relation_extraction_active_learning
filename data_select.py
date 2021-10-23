@@ -176,7 +176,7 @@ class QueryBase(metaclass=ABCMeta):
         for index in select:
             cur_labeled_ds[index] = unlabeled_ds.pop(index)
 
-        return cur_labeled_ds, unlabeled_ds
+        return cur_labeled_ds, unlabeled_ds, select
 
 
 class QueryRandom(QueryBase):

@@ -1,4 +1,6 @@
 import os
+import json
+import time
 import torch
 import hydra
 import random
@@ -23,10 +25,18 @@ logger = logging.getLogger(__name__)
 
 @hydra.main(config_path='config/', config_name = 'config')
 def main(cfg):
+    start_time = time.time()
     cwd = utils.get_original_cwd()
     cfg.cwd = cwd
     cfg.pos_size = 2 * cfg.pos_limit + 2
     logger.info(f'\n{OmegaConf.to_yaml(cfg)}')
+    summary = {
+                'model' : cfg.model.model_name,
+                'strategy': cfg.strategy.name
+                }
+
+    with open('my_logs.json', 'x') as f:
+        json.dump(summary,f)
 
     __Model__ = {'cnn' : models.CNNModel,
                  'rnn' : models.LSTMModel,
@@ -90,6 +100,7 @@ def main(cfg):
     # while len(cur_labeled_ds) <= all_size:
     while n_iter <= cfg.total_iter:
         n_iter += 1
+        summary[n_iter] = {}
         model = __Model__[cfg.model.model_name](cfg)
         if (not cfg.active_learning) or len(cur_labeled_ds) == cfg.start_size:
             logger.info(f'\n {model}')
@@ -101,41 +112,87 @@ def main(cfg):
         train_dataloader = DataLoader(list(cur_labeled_ds.values()), batch_size=cfg.batch_size, shuffle=True,
                                       collate_fn=collate_fn(cfg))
 
-        train_losses, valid_losses, one_f1_scores = [], [], []
+        train_acc, train_p, train_r, train_f1, train_loss = [], [], [], [], []
+        valid_acc, valid_p, valid_r, valid_f1, valid_loss = [], [], [], [], []
+
         for epoch in range(1, cfg.epoch + 1):
             # Ensure that the random seed is different every round
             manual_seed(cfg.seed + epoch)
-            train_loss = train(epoch, model, train_dataloader, optimizer, criterion, device, writer, cfg)
+            t_acc, t_p, t_r, t_f1, t_loss = train(epoch, model, train_dataloader, optimizer, criterion, device, writer, cfg)
             # Validation set
-            valid_f1, valid_loss = validate(epoch, model, valid_dataloader, criterion, device, cfg)
+            v_acc, v_p, v_r, v_f1, v_loss = validate(epoch, model, valid_dataloader, criterion, device, cfg)
             # Adjust the learning rate according to valid_loss
             scheduler.step(valid_loss)
             # model_path = model.save(epoch, cfg)
 
-            train_losses.append(train_loss)
-            valid_losses.append(valid_loss)
-            one_f1_scores.append(valid_f1)
+            train_acc.append(t_acc)
+            train_p.append(t_p)
+            train_r.append(t_r)
+            train_f1.append(t_f1)
+            train_loss.append(t_loss)
+
+            valid_acc.append(v_acc)
+            valid_p.append(v_p)
+            valid_r.append(v_r)
+            valid_f1.append(v_f1)
+            valid_loss.append(v_loss)
 
         if (not cfg.active_learning) or (cfg.show_plot and cfg.plot_utils == 'tensorboard' and (len(cur_labeled_ds) - cfg.start_size) % per_log_num == 0):
             logger.info(f'one_f1_scores:{one_f1_scores}')
-            for i in range(len(train_losses)):
+            for i in range(len(train_loss)):
                 writer.add_scalars(f'valid_copy/valid_loss_{len(cur_labeled_ds)}', {
-                    'train': train_losses[i],
-                    'valid': valid_losses[i]
+                    'train': train_loss[i],
+                    'valid': valid_loss[i]
                 }, i)
                 writer.add_scalars(f'valid/valid_f1_score_{len(cur_labeled_ds)}', {
-                    'valid_f1_score': one_f1_scores[i]
+                    'valid_f1_score': valid_f1[i]
                 }, i)
 
-        test_f1, test_loss = validate(-1, model, test_dataloader, criterion, device, cfg)
+        # Train logs
+        summary[n_iter]['train'] = {
+            'acc' : train_acc,
+            'p' : train_p,
+            'r' : train_r,
+            'f1' : train_f1,
+            'loss' : train_loss 
+        }
+
+        # Valid logs
+        summary[n_iter]['valid'] = {
+            'acc' : valid_acc,
+            'p' :   valid_p,
+            'r' :   valid_r,
+            'f1' :  valid_f1,
+            'loss': valid_loss 
+        }
+
+        test_acc, test_p, test_r, test_f1, test_loss = validate(-1, model, test_dataloader, criterion, device, cfg)
         test_f1_scores.append(test_f1)
         test_losses.append(test_loss)
+
+        # Test logs
+        summary[n_iter]['f1'] = test_f1
+        summary[n_iter]['p'] = test_p
+        summary[n_iter]['r'] = test_r
+        summary[n_iter]['acc'] = test_acc
+        summary[n_iter]['loss'] = test_loss
+
         # The average of the last 5 iterations is used as the f1_score performance under the current number of samples
         # f1_scores.append(mean(one_f1_scores[-5:]))
-        if len(cur_labeled_ds) == all_size:
-            break
 
-        cur_labeled_ds, unlabeled_ds = query_strategy(cur_labeled_ds, unlabeled_ds, model)
+        # if len(cur_labeled_ds) == all_size:
+        #     break
+
+        t = time.time()
+
+        if len(cur_labeled_ds) == all_size:
+            cur_labeled_ds, unlabeled_ds, selected_idxs = query_strategy(cur_labeled_ds, unlabeled_ds, model)
+    
+        summary[n_iter]['time'] = time.time() - t
+        summary[n_iter]['select'] = selected_idxs
+
+        with open('my_logs.json', 'w') as f:
+            json.dump(summary,f)
 
     if cfg.show_plot and cfg.plot_utils == 'tensorboard':
         for j in range(len(test_f1_scores)):
@@ -147,11 +204,13 @@ def main(cfg):
             }, j)
         writer.close()
 
+    summary['total_time'] = time.time() - start_time
+    with open('my_logs.json', 'w') as f:
+        json.dump(summary,f)
     # Test set
     # validate(-1, model, test_dataloader, criterion, device, cfg)
 
 if __name__ == '__main__':
-    import time
 
     cur = time.time()
     main()
