@@ -29,12 +29,12 @@ class QueryBase(metaclass=ABCMeta):
         self.neighbors = cfg.neighbors
 
     def __call__(self, cur_labeled_ds, unlabeled_ds, model):
-        pre_select, values = self.pre_sample(cur_labeled_ds, unlabeled_ds, model)
+        pre_select = self.pre_sample(cur_labeled_ds, unlabeled_ds, model)
 
         if self.balance:
             classes = self.predict_classes(pre_select, cur_labeled_ds, unlabeled_ds, model)
             balance_weights = self.get_balance_weights(cur_labeled_ds)
-            pre_select = self.balance_sample(pre_select, values, classes, balance_weights)
+            pre_select = self.balance_sample(pre_select, classes, balance_weights)
 
         select = pre_select[:self.batch_size]
         return self.get_divided_by_select(cur_labeled_ds, unlabeled_ds, select)
@@ -164,8 +164,8 @@ class QueryBase(metaclass=ABCMeta):
 
         return weights
 
-    def balance_sample(self, pre_select, values, classes, balance_weights):
-        results = [values[i] * balance_weights[classes[pre_select[i]]] for i in range(len(pre_select))]
+    def balance_sample(self, pre_select, classes, balance_weights):
+        results = [-balance_weights[classes[pre_select[i]]] for i in range(len(pre_select))]
         sorted_results = sorted(zip(results, pre_select))
         _, pre_select = list(zip(*sorted_results))
         return pre_select
@@ -197,7 +197,7 @@ class QueryUncertainty(QueryBase):
         else:
             probs = self.predict_prob(model, unlabeled_ds)
         select = None
-        values = None
+        # values = None
         U = None
         idxs_unlabeled = np.array(list(unlabeled_ds.keys()))
 
@@ -214,8 +214,8 @@ class QueryUncertainty(QueryBase):
 
         sorted, idxs = U.sort()
         select = idxs_unlabeled[idxs[:self.pre_batch_size]]
-        values = sorted[:self.pre_batch_size]
-        return select, values
+        # values = sorted[:self.pre_batch_size]
+        return select
 
 class QueryBALD(QueryBase):
     def __init__(self, cfg, device):
@@ -238,8 +238,8 @@ class QueryBALD(QueryBase):
 
         sorted, idxs = U.sort()
         select = idxs_unlabeled[idxs[:self.pre_batch_size]]
-        values = sorted[:self.pre_batch_size]
-        return select, values
+        # values = sorted[:self.pre_batch_size]
+        return select
 
 class QueryKMeans(QueryBase):
     def pre_sample(self,cur_labeled_ds, unlabeled_ds, model):
