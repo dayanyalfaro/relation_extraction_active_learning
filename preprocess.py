@@ -321,11 +321,14 @@ def _preprocess_collection(collection: Collection,cfg, nlp):
         for relation in sentence.relations:
             sentences_relations[(relation.from_phrase,relation.to_phrase)] = relation.label
 
+        id = -1
         for head, tail in permutations(sentence.keyphrases, 2):
+            id += 1
             hs, he = _get_pos_in_spans(head.spans[0][0], head.spans[-1][1], sentence_spans)
             ts, te = _get_pos_in_spans(tail.spans[0][0], tail.spans[-1][1], sentence_spans)
 
             feature = {
+                'id' : id,
                 'sentence' : sentence.text,
                 'tokens' : tokens,
                 'seq_len' : len(tokens),
@@ -346,7 +349,9 @@ def _preprocess_collection(collection: Collection,cfg, nlp):
 
 def _preprocess_dataframe(df,cfg, nlp):
     features = []
+    id = -1
     for index, row in df.iterrows():
+        id += 1
         if row['key'] == 'key':
             continue
         tokens = [token.text for token in nlp(row['sentence'])]
@@ -357,6 +362,7 @@ def _preprocess_dataframe(df,cfg, nlp):
         te = tokens.index(nlp(row['slotValue'].strip())[-1].text)
 
         feature = {
+            'id' : id,
             'sentence' : row['sentence'],
             'tokens' : tokens,
             'seq_len' : len(tokens),
