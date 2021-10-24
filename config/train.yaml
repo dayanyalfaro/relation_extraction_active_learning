@@ -7,6 +7,7 @@ total_iter: 50
 use_gpu: True
 gpu_id: 0
 
+initial_label_rate: 0.1
 start_size : 2000 # Amount of labeled samples at the beginning
 select_batch_size : 100
 use_all_train : False

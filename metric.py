@@ -3,6 +3,7 @@ import numpy as np
 from abc import ABCMeta, abstractmethod
 from sklearn.metrics import precision_recall_fscore_support
 
+from imbalance_degree import imbalance_degree
 
 class Metric(metaclass=ABCMeta):
     @abstractmethod
@@ -26,7 +27,7 @@ class Metric(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def compute(self):
+    def compute(self, *args):
         """
         Computes the metric based on it's accumulated state.
         This is called at the end of each epoch.
@@ -35,7 +36,7 @@ class Metric(metaclass=ABCMeta):
         pass
 
 
-class PRMetric():
+class PRMetric(Metric):
     def __init__(self):
         """
         Temporarily call the sklearn method
@@ -60,3 +61,35 @@ class PRMetric():
         _, _, acc, _ = precision_recall_fscore_support(self.y_true, self.y_pred, average='micro', warn_for=tuple())
 
         return acc, p, r, f1
+
+class ImbMetric(Metric):
+    def __init__(self):
+        super().__init__()
+        self.classes = []
+
+    def reset(self):
+        self.classes = []
+
+    def update(self, classes):
+        self.classes = classes
+
+    def compute(self):
+        pass
+
+class IRMetric(ImbMetric):
+    def compute(self):
+        _, class_counts = np.unique(self.classes, return_counts=True)
+        return class_counts.max()/class_counts.min()
+
+class IDMetric(ImbMetric):
+    def compute(self, distance = 'HE'):
+        imbalance_degree(self.classes, distance)
+
+class LRIDMetric(ImbMetric):
+    def compute(self):
+        _, class_counts = np.unique(self.classes, return_counts=True)
+        size = len(self.classes)
+        c = len(class_counts)
+        summation = np.sum([(n_c*np.log(c*n_c/size)) for n_c in class_counts])
+        result = 2 * summation
+        return result

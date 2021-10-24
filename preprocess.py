@@ -82,7 +82,6 @@ rel2idx = { 'ehealthKD2021':
                         'per:cause_of_death':37,
                         'org:number_of_employees/members':38,
                         'per:religion':39,
-                        'per:charges':40,
                     }
         }
 
@@ -410,10 +409,10 @@ def preprocess(cfg):
         logger.info('load and divide csv dataset...')
         csv_path = Path(os.path.join(cfg.cwd, cfg.corpus.data_path, 'annotated_sentences.csv'))
         df = pd.read_csv(csv_path)
-        train_df = df.sample(frac = 0.6, random_state = 1)
-        rest_df = df.drop(train_df.index)
-        valid_df = rest_df.sample(frac = 0.25, random_state = 1)
-        test_df = rest_df.drop(valid_df.index)
+        valid_df = df.groupby('relation', group_keys=False).apply(lambda x: x.sample(frac = 0.09, random_state = 2))
+        rest_df = df.drop(valid_df.index)
+        test_df = rest_df.groupby('relation', group_keys=False).apply(lambda x: x.sample(frac = 0.35, random_state = 2))
+        train_df = rest_df.drop(test_df.index)
 
         logger.info('process dataframes...')
         train_data = _preprocess_dataframe(train_df,cfg,nlp)

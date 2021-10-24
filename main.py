@@ -12,6 +12,7 @@ import data_select
 
 from hydra import utils
 from omegaconf import OmegaConf
+from alipy.data_manipulate import split
 from torch import optim
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
@@ -20,6 +21,7 @@ from preprocess import preprocess
 from training import train, validate
 from utils import load_pkl, manual_seed
 from dataset import CustomDataset, collate_fn
+from metric import IRMetric, IDMetric, LRIDMetric
 
 logger = logging.getLogger(__name__)
 
@@ -78,14 +80,24 @@ def main(cfg):
     test_dataloader = DataLoader(test_ds, batch_size=cfg.batch_size, shuffle=True, collate_fn=collate_fn(cfg))
 
     all_train_ds = load_pkl(train_data_path)
-    random.shuffle(all_train_ds)
-    all_train_ds = {index: value for index, value in enumerate(all_train_ds)}
-    lst = list(all_train_ds.items())
+    class_dist = [item['rel2idx'] for item in all_train_ds]
+    _, _, lab, unlab = split( y=class_dist, test_ratio=0, initial_label_rate=0.1,
+                                split_count=1, all_class=True)
+
     if cfg.active_learning:
-        cur_labeled_ds = dict(lst[:cfg.start_size])
+        cur_labeled_ds = {index: value for index, value in enumerate(all_train_ds) if index in lab}
     else:
-        cur_labeled_ds = all_train_ds
-    unlabeled_ds = dict(lst[cfg.start_size:])
+        cur_labeled_ds = {index: value for index, value in enumerate(all_train_ds)}
+
+    unlabeled_ds = {index: value for index, value in enumerate(all_train_ds) if index in unlab}
+
+    # all_train_ds = {index: value for index, value in enumerate(all_train_ds)}
+    # lst = list(all_train_ds.items())
+    # if cfg.active_learning:
+    #     cur_labeled_ds = dict(lst[:cfg.start_size])
+    # else:
+    #     cur_labeled_ds = all_train_ds
+    # unlabeled_ds = dict(lst[cfg.start_size:])
 
     per_log_num = 400
     all_size = len(all_train_ds)
@@ -97,10 +109,17 @@ def main(cfg):
     logger.info('=' * 10 + ' Start training ' + '=' * 10)
     test_f1_scores, test_losses = [], []
     n_iter = 0
+
+    # Balance metrics
+    IR = IRMetric()
+    ID = IDMetric()
+    LRID = LRIDMetric()
+
     # while len(cur_labeled_ds) <= all_size:
     while n_iter <= cfg.total_iter:
         n_iter += 1
         summary[n_iter] = {}
+
         model = __Model__[cfg.model.model_name](cfg)
         if (not cfg.active_learning) or len(cur_labeled_ds) == cfg.start_size:
             logger.info(f'\n {model}')
@@ -112,6 +131,7 @@ def main(cfg):
         train_dataloader = DataLoader(list(cur_labeled_ds.values()), batch_size=cfg.batch_size, shuffle=True,
                                       collate_fn=collate_fn(cfg))
 
+        # Performance metrics
         train_acc, train_p, train_r, train_f1, train_loss = [], [], [], [], []
         valid_acc, valid_p, valid_r, valid_f1, valid_loss = [], [], [], [], []
 
@@ -138,7 +158,7 @@ def main(cfg):
             valid_loss.append(v_loss)
 
         if (not cfg.active_learning) or (cfg.show_plot and cfg.plot_utils == 'tensorboard' and (len(cur_labeled_ds) - cfg.start_size) % per_log_num == 0):
-            logger.info(f'one_f1_scores:{one_f1_scores}')
+            # logger.info(f'one_f1_scores:{valid_f1}')
             for i in range(len(train_loss)):
                 writer.add_scalars(f'valid_copy/valid_loss_{len(cur_labeled_ds)}', {
                     'train': train_loss[i],
@@ -154,7 +174,7 @@ def main(cfg):
             'p' : train_p,
             'r' : train_r,
             'f1' : train_f1,
-            'loss' : train_loss 
+            'loss' : train_loss
         }
 
         # Valid logs
@@ -163,7 +183,7 @@ def main(cfg):
             'p' :   valid_p,
             'r' :   valid_r,
             'f1' :  valid_f1,
-            'loss': valid_loss 
+            'loss': valid_loss
         }
 
         test_acc, test_p, test_r, test_f1, test_loss = validate(-1, model, test_dataloader, criterion, device, cfg)
@@ -180,16 +200,23 @@ def main(cfg):
         # The average of the last 5 iterations is used as the f1_score performance under the current number of samples
         # f1_scores.append(mean(one_f1_scores[-5:]))
 
-        # if len(cur_labeled_ds) == all_size:
-        #     break
+        if len(cur_labeled_ds) == all_size:
+            break
 
         t = time.time()
+        cur_labeled_ds, unlabeled_ds, selected_idxs = query_strategy(cur_labeled_ds, unlabeled_ds, model)
 
-        if len(cur_labeled_ds) == all_size:
-            cur_labeled_ds, unlabeled_ds, selected_idxs = query_strategy(cur_labeled_ds, unlabeled_ds, model)
-    
         summary[n_iter]['time'] = time.time() - t
         summary[n_iter]['select'] = selected_idxs
+
+        labeled_indexes = list(cur_labeled_ds.keys())
+        IR.update(labeled_indexes)
+        ID.update(labeled_indexes)
+        LRID.update(labeled_indexes)
+        summary[n_iter]['IR'] = IR.compute()
+        summary[n_iter]['ID_HE'] = ID.compute('HE')
+        summary[n_iter]['ID_TV'] = ID.compute('TV')
+        summary[n_iter]['LRID'] = LRID.compute()
 
         with open('my_logs.json', 'w') as f:
             json.dump(summary,f)

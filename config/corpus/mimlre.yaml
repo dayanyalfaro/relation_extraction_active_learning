@@ -12,4 +12,4 @@ download_link: "https://nlp.stanford.edu/data/glove.6B.zip"
 zip_path:  "glove.6B.zip"
 
 # Type of relationship
-num_relations: 41
+num_relations: 40

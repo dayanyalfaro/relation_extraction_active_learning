@@ -6,3 +6,5 @@ preprocess: True
 # For example: [-30, 30], when embed, the overall +31 becomes [1, 61]
 # There are a total of 62 pos tokens, 0 is reserved for pad
 pos_limit: 30
+
+split_seed: 1
