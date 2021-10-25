@@ -99,6 +99,8 @@ def main(cfg):
     _, _, lab, unlab = split( y=class_dist, test_ratio=0, initial_label_rate=0.1,
                                 split_count=1, all_class=True)
     logger.info('Splitting done')
+    lab = list(lab)
+    unlab = list(unlab)
     if cfg.active_learning:
         cur_labeled_ds = {index: value for index, value in enumerate(all_train_ds) if (index in lab)}
     else:
