@@ -165,7 +165,7 @@ def main(cfg):
             # Validation set
             v_acc, v_p, v_r, v_f1, v_loss = validate(epoch, model, valid_dataloader, criterion, device, cfg)
             # Adjust the learning rate according to valid_loss
-            scheduler.step(valid_loss)
+            scheduler.step(v_loss)
             # model_path = model.save(epoch, cfg)
 
             train_acc.append(t_acc)
