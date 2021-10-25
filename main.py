@@ -105,7 +105,7 @@ def main(cfg):
         cur_labeled_ds = {}
         unlabeled_ds = {}
         for index, value in enumerate(all_train_ds):
-            if index in lab:
+            if index in lab[0]:
                 cur_labeled_ds[index] = value
             else:
                 unlabeled_ds[index] = value
