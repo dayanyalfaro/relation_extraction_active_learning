@@ -135,3 +135,4 @@ vocab.txt
 SBW-vectors-300-min5.txt
 glove.6B/
 embedding/
+*.json

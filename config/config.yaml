@@ -9,7 +9,7 @@ cwd: ???
 defaults:
   - model: encoder # [cnn, rnn, lm]
   - corpus: mimlre
-  - strategy: 'uncertainty'
+  - strategy: random
   - embedding
   - preprocess
   - train

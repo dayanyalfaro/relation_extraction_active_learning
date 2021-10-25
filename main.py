@@ -1,6 +1,7 @@
 import os
 import json
 import time
+import wandb
 import torch
 import hydra
 import random
@@ -25,12 +26,16 @@ from metric import IRMetric, IDMetric, LRIDMetric
 
 logger = logging.getLogger(__name__)
 
+os.environ["WANDB_API_KEY"] = '42b01ac48aabb9117171872873dccfa9e26aa8c0'
+os.environ["WANDB_MODE"] = "dryrun"
+
 @hydra.main(config_path='config/', config_name = 'config')
 def main(cfg):
     start_time = time.time()
     cwd = utils.get_original_cwd()
     cfg.cwd = cwd
     cfg.pos_size = 2 * cfg.pos_limit + 2
+
     logger.info(f'\n{OmegaConf.to_yaml(cfg)}')
     summary = {
                 'model' : cfg.model.model_name,
@@ -52,6 +57,15 @@ def main(cfg):
         'bald': data_select.QueryBALD,
         'kmeans': data_select.QueryKMeans
     }
+
+    wandb_config = { 
+                        'corpus' : cfg.corpus.name,
+                        'model' : cfg.model.model_name,
+                        'strategy' : cfg.strategy.name + cfg.strategy.type,
+                        'balance' : cfg.balance,
+                        'balance_strategy' : cfg.class_strategy
+    }
+    wandb.init(project="relation_extraction_active_learning", config = wandb_config)
 
     # device
     if cfg.use_gpu and torch.cuda.is_available():
@@ -81,9 +95,10 @@ def main(cfg):
 
     all_train_ds = load_pkl(train_data_path)
     class_dist = [item['rel2idx'] for item in all_train_ds]
+    logger.info('Splitting dataset into labeled and unlabeled')
     _, _, lab, unlab = split( y=class_dist, test_ratio=0, initial_label_rate=0.1,
                                 split_count=1, all_class=True)
-
+    logger.info('Splitting done')
     if cfg.active_learning:
         cur_labeled_ds = {index: value for index, value in enumerate(all_train_ds) if index in lab}
     else:
@@ -206,20 +221,36 @@ def main(cfg):
         t = time.time()
         cur_labeled_ds, unlabeled_ds, selected_idxs = query_strategy(cur_labeled_ds, unlabeled_ds, model)
 
-        summary[n_iter]['time'] = time.time() - t
+        summary[n_iter]['time'] = select_time = time.time() - t
         summary[n_iter]['select'] = selected_idxs
 
         labeled_indexes = list(cur_labeled_ds.keys())
         IR.update(labeled_indexes)
         ID.update(labeled_indexes)
         LRID.update(labeled_indexes)
-        summary[n_iter]['IR'] = IR.compute()
-        summary[n_iter]['ID_HE'] = ID.compute('HE')
-        summary[n_iter]['ID_TV'] = ID.compute('TV')
-        summary[n_iter]['LRID'] = LRID.compute()
+        summary[n_iter]['IR'] = IR_value = IR.compute()
+        summary[n_iter]['ID_HE'] = ID_HE_value = ID.compute('HE')
+        summary[n_iter]['ID_TV'] = ID_TV_value = ID.compute('TV')
+        summary[n_iter]['LRID'] = LRID_value = LRID.compute()
 
         with open('my_logs.json', 'w') as f:
             json.dump(summary,f)
+
+        wandb.log({
+            'accuracy' : test_acc,
+            'precision' : test_p,
+            'recall' : test_r,
+            'f1' : test_f1,
+            'loss' : test_loss,
+            'select_time' : select_time,
+            'select': selected_idxs,
+            'IR' : IR_value,
+            'ID_HE' : ID_HE_value,
+            'ID_TV' : ID_TV_value,
+            'LRID' : LRID_value,
+        },
+        step = n_iter
+        )
 
     if cfg.show_plot and cfg.plot_utils == 'tensorboard':
         for j in range(len(test_f1_scores)):

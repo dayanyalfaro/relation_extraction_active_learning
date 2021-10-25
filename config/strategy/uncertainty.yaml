@@ -1,6 +1,6 @@
 name: 'uncertainty'
 
-type: 'entropy_sampling' # ['least_confident','margin_sampling','entropy_sampling']
+type: '_entropy_sampling' # ['least_confident','margin_sampling','entropy_sampling']
 
 use_dropout: True
 n_drop: 10

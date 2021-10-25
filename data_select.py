@@ -201,12 +201,12 @@ class QueryUncertainty(QueryBase):
         U = None
         idxs_unlabeled = np.array(list(unlabeled_ds.keys()))
 
-        if self.type == 'least_confident':
+        if self.type == '_least_confident':
             U = probs.max(1)[0]
-        elif self.type == 'margin_sampling':
+        elif self.type == '_margin_sampling':
             probs_sorted, idxs = probs.sort(descending=True)
             U = probs_sorted[:, 0] - probs_sorted[:,1]
-        elif self.type == 'entropy_sampling':
+        elif self.type == '_entropy_sampling':
             log_probs = torch.log(probs)
             U = (probs*log_probs).sum(1)
         else:
