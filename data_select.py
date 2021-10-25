@@ -177,6 +177,7 @@ class QueryBase(metaclass=ABCMeta):
         print(type(select))
         logger.info(f'select index:{select}')
         for index in select:
+            print(type(index))
             cur_labeled_ds[index] = unlabeled_ds.pop(index)
 
         return cur_labeled_ds, unlabeled_ds, select
@@ -185,7 +186,7 @@ class QueryBase(metaclass=ABCMeta):
 class QueryRandom(QueryBase):
     def pre_sample(self, cur_labeled_ds, unlabeled_ds, model):
         # Select size samples without repetition to mark
-        return random.sample(unlabeled_ds.keys(), self.pre_batch_size), [1] * self.pre_batch_size
+        return random.sample(unlabeled_ds.keys(), self.pre_batch_size)
 
 class QueryUncertainty(QueryBase):
     def __init__(self, cfg, device):
