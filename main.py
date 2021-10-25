@@ -102,11 +102,17 @@ def main(cfg):
     lab = list(lab)
     unlab = list(unlab)
     if cfg.active_learning:
-        cur_labeled_ds = {index: value for index, value in enumerate(all_train_ds) if (index in lab)}
+        cur_labeled_ds = {}
+        unlabeled_ds = {}
+        for index, value in enumerate(all_train_ds):
+            if index in lab:
+                cur_labeled_ds[index] = value
+            else:
+                unlabeled_ds[index] = value
     else:
         cur_labeled_ds = {index: value for index, value in enumerate(all_train_ds)}
 
-    unlabeled_ds = {index: value for index, value in enumerate(all_train_ds) if (index in unlab)}
+    # unlabeled_ds = {index: value for index, value in enumerate(all_train_ds) if (index in unlab)}
 
     # all_train_ds = {index: value for index, value in enumerate(all_train_ds)}
     # lst = list(all_train_ds.items())
