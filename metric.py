@@ -63,15 +63,15 @@ class PRMetric(Metric):
         return acc, p, r, f1
 
 class ImbMetric(Metric):
-    def __init__(self):
+    def __init__(self, classes):
         super().__init__()
-        self.classes = []
+        self.classes = classes
 
     def reset(self):
         self.classes = []
 
     def update(self, classes):
-        self.classes = classes
+        self.classes += classes
 
     def compute(self):
         pass

@@ -134,9 +134,10 @@ def main(cfg):
     n_iter = 0
 
     # Balance metrics
-    IR = IRMetric()
-    ID = IDMetric()
-    LRID = LRIDMetric()
+    labeled_classes = [value['rel2idx'] for value in cur_labeled_ds.values()]
+    IR = IRMetric(labeled_classes)
+    ID = IDMetric(labeled_classes)
+    LRID = LRIDMetric(labeled_classes)
 
     # while len(cur_labeled_ds) <= all_size:
     while n_iter <= cfg.total_iter:
@@ -232,10 +233,10 @@ def main(cfg):
         summary[n_iter]['time'] = select_time = time.time() - t
         summary[n_iter]['select'] = selected_idxs
 
-        labeled_indexes = list(cur_labeled_ds.keys())
-        IR.update(labeled_indexes)
-        ID.update(labeled_indexes)
-        LRID.update(labeled_indexes)
+        new_labeled_classes = [cur_labeled_ds[index]['rel2idx'] for index in selected_idxs]
+        IR.update(new_labeled_classes)
+        ID.update(new_labeled_classes)
+        LRID.update(new_labeled_classes)
         summary[n_iter]['IR'] = IR_value = IR.compute()
         summary[n_iter]['ID_HE'] = ID_HE_value = ID.compute('HE')
         summary[n_iter]['ID_TV'] = ID_TV_value = ID.compute('TV')
