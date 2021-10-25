@@ -167,7 +167,8 @@ class QueryBase(metaclass=ABCMeta):
     def balance_sample(self, pre_select, classes, balance_weights):
         results = [-balance_weights[classes[pre_select[i]]] for i in range(len(pre_select))]
         sorted_results = sorted(zip(results, pre_select))
-        _, pre_select = list(zip(*sorted_results))
+        _, lst = list(zip(*sorted_results))
+        pre_select = lst[1]
         return pre_select
 
 
