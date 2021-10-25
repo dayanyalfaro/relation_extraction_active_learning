@@ -173,11 +173,8 @@ class QueryBase(metaclass=ABCMeta):
 
 
     def get_divided_by_select(self, cur_labeled_ds, unlabeled_ds, select):
-        print('*******************************************')
-        print(type(select))
         logger.info(f'select index:{select}')
         for index in select:
-            print(type(index))
             cur_labeled_ds[index] = unlabeled_ds.pop(index)
 
         return cur_labeled_ds, unlabeled_ds, select
