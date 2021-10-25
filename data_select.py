@@ -168,11 +168,13 @@ class QueryBase(metaclass=ABCMeta):
         results = [-balance_weights[classes[pre_select[i]]] for i in range(len(pre_select))]
         sorted_results = sorted(zip(results, pre_select))
         _, lst = list(zip(*sorted_results))
-        pre_select = lst[1]
+        pre_select = list(lst[1])
         return pre_select
 
 
     def get_divided_by_select(self, cur_labeled_ds, unlabeled_ds, select):
+        print('*******************************************')
+        print(type(select))
         logger.info(f'select index:{select}')
         for index in select:
             cur_labeled_ds[index] = unlabeled_ds.pop(index)
