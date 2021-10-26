@@ -83,7 +83,7 @@ class IRMetric(ImbMetric):
 
 class IDMetric(ImbMetric):
     def compute(self, distance = 'HE'):
-        imbalance_degree(self.classes, distance)
+        return imbalance_degree(self.classes, distance)
 
 class LRIDMetric(ImbMetric):
     def compute(self):

@@ -252,3 +252,5 @@ def imbalance_degree(classes, distance="EU"):
     dfn = _dist_fn()
     dist_ed = dfn(empirical_distribution, e)
     return 0.0 if dist_ed == 00 else (dist_ed / dfn(i_m, e)) + (m - 1)
+
+
