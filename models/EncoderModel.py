@@ -16,7 +16,7 @@ class EncoderModel(BasicModule):
         else:
             # config = AutoConfig.from_pretrained(cfg.model.lm_file, num_labels=cfg.corpus.num_relations)
             # self.encoder = AutoModel.from_pretrained(cfg.model.lm_file, config=config)
-            self.encoder = BertModel.from_pretrained(cfg.model.lm_file)
+            self.encoder = BertModel.from_pretrained(cfg.model.lm_file, num_hidden_layers=cfg.model.num_hidden_layers)
         hidden_size = 768 # config.hidden_size
         self.classifier = nn.Sequential(
             nn.Linear(2 * hidden_size, hidden_size),
