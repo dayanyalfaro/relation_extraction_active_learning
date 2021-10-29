@@ -27,17 +27,23 @@ class QueryBase(metaclass=ABCMeta):
         self.balance = cfg.balance
         self.class_strategy = cfg.class_strategy
         self.neighbors = cfg.neighbors
+        if self.balance:
+            self.sample_size = self.pre_batch_size
+        else:
+            self.sample_size = self.batch_size
+
 
     def __call__(self, cur_labeled_ds, unlabeled_ds, model):
-        pre_select = self.pre_sample(cur_labeled_ds, unlabeled_ds, model)
-
         if self.balance:
+            pre_select, values = self.pre_sample(cur_labeled_ds, unlabeled_ds, model)
             classes = self.predict_classes(pre_select, cur_labeled_ds, unlabeled_ds, model)
             balance_weights = self.get_balance_weights(cur_labeled_ds)
-            pre_select = self.balance_sample(pre_select, classes, balance_weights)
-
-        select = pre_select[:self.batch_size]
-        return self.get_divided_by_select(cur_labeled_ds, unlabeled_ds, select)
+            pre_select = self.balance_sample(pre_select, classes,values, balance_weights)
+            select = pre_select[:self.batch_size]
+            return self.get_divided_by_select(cur_labeled_ds, unlabeled_ds, select)
+        else:
+            select, values = self.pre_sample(cur_labeled_ds, unlabeled_ds, model)
+            return self.get_divided_by_select(cur_labeled_ds, unlabeled_ds, select)
 
     @abstractmethod
     def pre_sample(self, *args):
@@ -164,8 +170,8 @@ class QueryBase(metaclass=ABCMeta):
 
         return weights
 
-    def balance_sample(self, pre_select, classes, balance_weights):
-        results = [-balance_weights[classes[pre_select[i]]] for i in range(len(pre_select))]
+    def balance_sample(self, pre_select, classes, values, balance_weights):
+        results = [ -values[i] * balance_weights[classes[pre_select[i]]] for i in range(len(pre_select))]
         sorted_results = sorted(zip(results, pre_select))
         _, lst = list(zip(*sorted_results))
         pre_select = list(lst[1])
@@ -183,7 +189,7 @@ class QueryBase(metaclass=ABCMeta):
 class QueryRandom(QueryBase):
     def pre_sample(self, cur_labeled_ds, unlabeled_ds, model):
         # Select size samples without repetition to mark
-        return random.sample(unlabeled_ds.keys(), self.pre_batch_size)
+        return random.sample(unlabeled_ds.keys(), self.sample_size), [1] * self.sample_size
 
 class QueryUncertainty(QueryBase):
     def __init__(self, cfg, device):
@@ -203,20 +209,20 @@ class QueryUncertainty(QueryBase):
         idxs_unlabeled = np.array(list(unlabeled_ds.keys()))
 
         if self.type == '_least_confident':
-            U = probs.max(1)[0]
+            U = 1 - probs.max(1)[0]
         elif self.type == '_margin_sampling':
             probs_sorted, idxs = probs.sort(descending=True)
-            U = probs_sorted[:, 0] - probs_sorted[:,1]
+            U = 1 - (probs_sorted[:, 0] - probs_sorted[:,1])
         elif self.type == '_entropy_sampling':
             log_probs = torch.log(probs)
-            U = (probs*log_probs).sum(1)
+            U = -(probs*log_probs).sum(1)
         else:
             assert ('uncertainty concrete choose error')
 
         sorted, idxs = U.sort()
-        select = idxs_unlabeled[idxs[:self.pre_batch_size]]
-        # values = sorted[:self.pre_batch_size]
-        return select
+        select = idxs_unlabeled[idxs[-self.sample_size:]]
+        values = sorted[-self.sample_size:]
+        return select, values
 
 class QueryBALD(QueryBase):
     def __init__(self, cfg, device):
@@ -233,14 +239,14 @@ class QueryBALD(QueryBase):
         idxs_unlabeled = np.array(list(unlabeled_ds.keys()))
 
         pb = probs.mean(0)
-        entropy1 = (-pb*torch.log(pb)).sum(1)
-        entropy2 = (-probs*torch.log(probs)).sum(2).mean(0)
-        U = entropy2 - entropy1
+        entropy1 = (pb*torch.log(pb)).sum(1)
+        entropy2 = (probs*torch.log(probs)).sum(2).mean(0)
+        U = - entropy1 + entropy2
 
         sorted, idxs = U.sort()
-        select = idxs_unlabeled[idxs[:self.pre_batch_size]]
-        # values = sorted[:self.pre_batch_size]
-        return select
+        select = idxs_unlabeled[idxs[-self.sample_size:]]
+        values = sorted[-self.sample_size:]
+        return select, values
 
 class QueryKMeans(QueryBase):
     def pre_sample(self,cur_labeled_ds, unlabeled_ds, model):
@@ -248,13 +254,13 @@ class QueryKMeans(QueryBase):
 
         features = self.extract_features(model,unlabeled_ds)
         features = features.numpy()
-        cluster_learner = KMeans(n_clusters=self.pre_batch_size)
+        cluster_learner = KMeans(n_clusters=self.sample_size)
         cluster_learner.fit(features)
 
         cluster_idxs = cluster_learner.predict(features)
         centers = cluster_learner.cluster_centers_[cluster_idxs]
         dis = (features - centers)**2
         dis = dis.sum(axis=1)
-        q_idxs = np.array([np.arange(features.shape[0])[cluster_idxs==i][dis[cluster_idxs==i].argmin()] for i in range(self.pre_batch_size)])
+        q_idxs = np.array([np.arange(features.shape[0])[cluster_idxs==i][dis[cluster_idxs==i].argmin()] for i in range(self.sample_size)])
 
-        return idxs_unlabeled[q_idxs]
+        return idxs_unlabeled[q_idxs], [1] * self.sample_size

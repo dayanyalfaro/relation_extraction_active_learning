@@ -1,5 +1,5 @@
-strategies = ['random', 'uncertainty', 'bald', 'kmeans']
-filters = ['knn', 'prob']
+strategies = ['random', 'uncertainty', 'bald']
+filters = ['knn']
 balanced = ['True', 'False']
 types = ['least_confident','margin_sampling','entropy_sampling']
 

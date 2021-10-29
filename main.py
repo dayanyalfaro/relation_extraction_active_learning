@@ -58,7 +58,7 @@ def main(cfg):
         'kmeans': data_select.QueryKMeans
     }
 
-    wandb_config = { 
+    wandb_config = {
                         'corpus' : cfg.corpus.name,
                         'model' : cfg.model.model_name,
                         'strategy' : cfg.strategy.name + cfg.strategy.type,
