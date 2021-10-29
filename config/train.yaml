@@ -1,6 +1,6 @@
 seed: 1
 
-active_learning: False
+active_learning: True
 
 total_iter: 50
 
