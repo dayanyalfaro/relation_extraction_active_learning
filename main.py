@@ -37,13 +37,6 @@ def main(cfg):
     cfg.pos_size = 2 * cfg.pos_limit + 2
 
     logger.info(f'\n{OmegaConf.to_yaml(cfg)}')
-    summary = {
-                'model' : cfg.model.model_name,
-                'strategy': cfg.strategy.name
-                }
-
-    with open('my_logs.json', 'x') as f:
-        json.dump(summary,f)
 
     __Model__ = {'cnn' : models.CNNModel,
                  'rnn' : models.LSTMModel,
@@ -65,7 +58,6 @@ def main(cfg):
                         'balance' : cfg.balance,
                         'balance_strategy' : cfg.class_strategy
     }
-    wandb.init(project="relation_extraction_active_learning", config = wandb_config)
 
     # device
     if cfg.use_gpu and torch.cuda.is_available():
@@ -97,185 +89,190 @@ def main(cfg):
     class_dist = [item['rel2idx'] for item in all_train_ds]
     logger.info('Splitting dataset into labeled and unlabeled')
     _, _, lab, unlab = split( y=class_dist, test_ratio=0, initial_label_rate=0.1,
-                                split_count=1, all_class=True)
+                                split_count= cfg.seed_count, all_class=True)
     logger.info('Splitting done')
-    lab = list(lab)
-    unlab = list(unlab)
-    if cfg.active_learning:
-        cur_labeled_ds = {}
-        unlabeled_ds = {}
-        for index, value in enumerate(all_train_ds):
-            if index in lab[0]:
-                cur_labeled_ds[index] = value
-            else:
-                unlabeled_ds[index] = value
-    else:
-        cur_labeled_ds = {index: value for index, value in enumerate(all_train_ds)}
 
-    # unlabeled_ds = {index: value for index, value in enumerate(all_train_ds) if (index in unlab)}
+    for idx,label_split in enumerate(lab):
+        summary = {
+                    'model' : cfg.model.model_name,
+                    'strategy': cfg.strategy.name
+                    }
 
-    # all_train_ds = {index: value for index, value in enumerate(all_train_ds)}
-    # lst = list(all_train_ds.items())
-    # if cfg.active_learning:
-    #     cur_labeled_ds = dict(lst[:cfg.start_size])
-    # else:
-    #     cur_labeled_ds = all_train_ds
-    # unlabeled_ds = dict(lst[cfg.start_size:])
+        run_name = f'{cfg.strategy.name + cfg.strategy.type}'
+        if cfg.balance:
+            run_name += 'balance'
+        run_name += f'{idx}'
 
-    per_log_num = 400
-    all_size = len(all_train_ds)
-    print(all_size)
-    writer = SummaryWriter('tensorboard')
+        with open(f'{run_name}.json', 'x') as f:
+            json.dump(summary,f)
+        
+        run = wandb.init(project="relation_extraction_active_learning", name= run_name, config = wandb_config)
 
-    query_strategy = __Select__[cfg.strategy.name](cfg, device)
+        if cfg.active_learning:
+            cur_labeled_ds = {}
+            unlabeled_ds = {}
+            for index, value in enumerate(all_train_ds):
+                if index in label_split:
+                    cur_labeled_ds[index] = value
+                else:
+                    unlabeled_ds[index] = value
+        else:
+            cur_labeled_ds = {index: value for index, value in enumerate(all_train_ds)}
 
-    logger.info('=' * 10 + ' Start training ' + '=' * 10)
-    test_f1_scores, test_losses = [], []
-    n_iter = 0
+        per_log_num = 400
+        all_size = len(all_train_ds)
+        # print(all_size)
+        writer = SummaryWriter('tensorboard')
 
-    # Balance metrics
-    labeled_classes = [value['rel2idx'] for value in cur_labeled_ds.values()]
-    IR = IRMetric(labeled_classes)
-    ID = IDMetric(labeled_classes)
-    LRID = LRIDMetric(labeled_classes)
+        query_strategy = __Select__[cfg.strategy.name](cfg, device)
 
-    # while len(cur_labeled_ds) <= all_size:
-    while n_iter <= cfg.total_iter:
-        n_iter += 1
-        summary[n_iter] = {}
+        logger.info('=' * 10 + ' Start training ' + '=' * 10)
+        test_f1_scores, test_losses = [], []
+        n_iter = 0
 
-        model = __Model__[cfg.model.model_name](cfg)
-        if (not cfg.active_learning) or len(cur_labeled_ds) == cfg.start_size:
-            logger.info(f'\n {model}')
-        model.to(device)
-        optimizer = optim.Adam(model.parameters(), lr=cfg.learning_rate, weight_decay=cfg.weight_decay)
-        scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor=cfg.lr_factor, patience=cfg.lr_patience)
-        criterion = nn.CrossEntropyLoss()
+        # Balance metrics
+        labeled_classes = [value['rel2idx'] for value in cur_labeled_ds.values()]
+        IR = IRMetric(labeled_classes)
+        ID = IDMetric(labeled_classes)
+        LRID = LRIDMetric(labeled_classes)
 
-        train_dataloader = DataLoader(list(cur_labeled_ds.values()), batch_size=cfg.batch_size, shuffle=True,
-                                      collate_fn=collate_fn(cfg))
+        # while len(cur_labeled_ds) <= all_size:
+        while n_iter <= cfg.total_iter:
+            n_iter += 1
+            summary[n_iter] = {}
 
-        # Performance metrics
-        train_acc, train_p, train_r, train_f1, train_loss = [], [], [], [], []
-        valid_acc, valid_p, valid_r, valid_f1, valid_loss = [], [], [], [], []
+            model = __Model__[cfg.model.model_name](cfg)
+            if (not cfg.active_learning) or len(cur_labeled_ds) == cfg.start_size:
+                logger.info(f'\n {model}')
+            model.to(device)
+            optimizer = optim.Adam(model.parameters(), lr=cfg.learning_rate, weight_decay=cfg.weight_decay)
+            scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor=cfg.lr_factor, patience=cfg.lr_patience)
+            criterion = nn.CrossEntropyLoss()
 
-        for epoch in range(1, cfg.epoch + 1):
-            # Ensure that the random seed is different every round
-            manual_seed(cfg.seed + epoch)
-            t_acc, t_p, t_r, t_f1, t_loss = train(epoch, model, train_dataloader, optimizer, criterion, device, writer, cfg)
-            # Validation set
-            v_acc, v_p, v_r, v_f1, v_loss = validate(epoch, model, valid_dataloader, criterion, device, cfg)
-            # Adjust the learning rate according to valid_loss
-            scheduler.step(v_loss)
-            # model_path = model.save(epoch, cfg)
+            train_dataloader = DataLoader(list(cur_labeled_ds.values()), batch_size=cfg.batch_size, shuffle=True,
+                                        collate_fn=collate_fn(cfg))
 
-            train_acc.append(t_acc)
-            train_p.append(t_p)
-            train_r.append(t_r)
-            train_f1.append(t_f1)
-            train_loss.append(t_loss)
+            # Performance metrics
+            train_acc, train_p, train_r, train_f1, train_loss = [], [], [], [], []
+            valid_acc, valid_p, valid_r, valid_f1, valid_loss = [], [], [], [], []
 
-            valid_acc.append(v_acc)
-            valid_p.append(v_p)
-            valid_r.append(v_r)
-            valid_f1.append(v_f1)
-            valid_loss.append(v_loss)
+            for epoch in range(1, cfg.epoch + 1):
+                # Ensure that the random seed is different every round
+                manual_seed(cfg.seed + epoch)
+                t_acc, t_p, t_r, t_f1, t_loss = train(epoch, model, train_dataloader, optimizer, criterion, device, writer, cfg)
+                # Validation set
+                v_acc, v_p, v_r, v_f1, v_loss = validate(epoch, model, valid_dataloader, criterion, device, cfg)
+                # Adjust the learning rate according to valid_loss
+                scheduler.step(v_loss)
+                # model_path = model.save(epoch, cfg)
 
-        if (not cfg.active_learning) or (cfg.show_plot and cfg.plot_utils == 'tensorboard' and (len(cur_labeled_ds) - cfg.start_size) % per_log_num == 0):
-            # logger.info(f'one_f1_scores:{valid_f1}')
-            for i in range(len(train_loss)):
-                writer.add_scalars(f'valid_copy/valid_loss_{len(cur_labeled_ds)}', {
-                    'train': train_loss[i],
-                    'valid': valid_loss[i]
-                }, i)
-                writer.add_scalars(f'valid/valid_f1_score_{len(cur_labeled_ds)}', {
-                    'valid_f1_score': valid_f1[i]
-                }, i)
+                train_acc.append(t_acc)
+                train_p.append(t_p)
+                train_r.append(t_r)
+                train_f1.append(t_f1)
+                train_loss.append(t_loss)
 
-        # Train logs
-        summary[n_iter]['train'] = {
-            'acc' : train_acc,
-            'p' : train_p,
-            'r' : train_r,
-            'f1' : train_f1,
-            'loss' : train_loss
-        }
+                valid_acc.append(v_acc)
+                valid_p.append(v_p)
+                valid_r.append(v_r)
+                valid_f1.append(v_f1)
+                valid_loss.append(v_loss)
 
-        # Valid logs
-        summary[n_iter]['valid'] = {
-            'acc' : valid_acc,
-            'p' :   valid_p,
-            'r' :   valid_r,
-            'f1' :  valid_f1,
-            'loss': valid_loss
-        }
+            # if (not cfg.active_learning) or (cfg.show_plot and cfg.plot_utils == 'tensorboard' and (len(cur_labeled_ds) - cfg.start_size) % per_log_num == 0):
+            #     # logger.info(f'one_f1_scores:{valid_f1}')
+            #     for i in range(len(train_loss)):
+            #         writer.add_scalars(f'valid_copy/valid_loss_{len(cur_labeled_ds)}', {
+            #             'train': train_loss[i],
+            #             'valid': valid_loss[i]
+            #         }, i)
+            #         writer.add_scalars(f'valid/valid_f1_score_{len(cur_labeled_ds)}', {
+            #             'valid_f1_score': valid_f1[i]
+            #         }, i)
 
-        test_acc, test_p, test_r, test_f1, test_loss = validate(-1, model, test_dataloader, criterion, device, cfg)
-        test_f1_scores.append(test_f1)
-        test_losses.append(test_loss)
+            # Train logs
+            summary[n_iter]['train'] = {
+                'acc' : train_acc,
+                'p' : train_p,
+                'r' : train_r,
+                'f1' : train_f1,
+                'loss' : train_loss
+            }
 
-        # Test logs
-        summary[n_iter]['f1'] = test_f1
-        summary[n_iter]['p'] = test_p
-        summary[n_iter]['r'] = test_r
-        summary[n_iter]['acc'] = test_acc
-        summary[n_iter]['loss'] = test_loss
+            # Valid logs
+            summary[n_iter]['valid'] = {
+                'acc' : valid_acc,
+                'p' :   valid_p,
+                'r' :   valid_r,
+                'f1' :  valid_f1,
+                'loss': valid_loss
+            }
 
-        # The average of the last 5 iterations is used as the f1_score performance under the current number of samples
-        # f1_scores.append(mean(one_f1_scores[-5:]))
+            test_acc, test_p, test_r, test_f1, test_loss = validate(-1, model, test_dataloader, criterion, device, cfg)
+            test_f1_scores.append(test_f1)
+            test_losses.append(test_loss)
 
-        if len(cur_labeled_ds) == all_size:
-            break
+            # Test logs
+            summary[n_iter]['f1'] = test_f1
+            summary[n_iter]['p'] = test_p
+            summary[n_iter]['r'] = test_r
+            summary[n_iter]['acc'] = test_acc
+            summary[n_iter]['loss'] = test_loss
 
-        t = time.time()
-        cur_labeled_ds, unlabeled_ds, selected_idxs = query_strategy(cur_labeled_ds, unlabeled_ds, model)
+            # The average of the last 5 iterations is used as the f1_score performance under the current number of samples
+            # f1_scores.append(mean(one_f1_scores[-5:]))
 
-        summary[n_iter]['time'] = select_time = time.time() - t
-        summary[n_iter]['select'] = selected_idxs
+            if len(cur_labeled_ds) == all_size:
+                break
 
-        new_labeled_classes = [cur_labeled_ds[index]['rel2idx'] for index in selected_idxs]
-        IR.update(new_labeled_classes)
-        ID.update(new_labeled_classes)
-        LRID.update(new_labeled_classes)
-        summary[n_iter]['IR'] = IR_value = IR.compute()
-        summary[n_iter]['ID_HE'] = ID_HE_value = ID.compute('HE')
-        summary[n_iter]['ID_TV'] = ID_TV_value = ID.compute('TV')
-        summary[n_iter]['LRID'] = LRID_value = LRID.compute()
+            t = time.time()
+            cur_labeled_ds, unlabeled_ds, selected_idxs = query_strategy(cur_labeled_ds, unlabeled_ds, model)
 
+            summary[n_iter]['time'] = select_time = time.time() - t
+            summary[n_iter]['select'] = selected_idxs
+
+            new_labeled_classes = [cur_labeled_ds[index]['rel2idx'] for index in selected_idxs]
+            IR.update(new_labeled_classes)
+            ID.update(new_labeled_classes)
+            LRID.update(new_labeled_classes)
+            summary[n_iter]['IR'] = IR_value = IR.compute()
+            summary[n_iter]['ID_HE'] = ID_HE_value = ID.compute('HE')
+            summary[n_iter]['ID_TV'] = ID_TV_value = ID.compute('TV')
+            summary[n_iter]['LRID'] = LRID_value = LRID.compute()
+
+            with open('my_logs.json', 'w') as f:
+                json.dump(summary,f)
+
+            run.log({
+                'accuracy' : test_acc,
+                'precision' : test_p,
+                'recall' : test_r,
+                'f1' : test_f1,
+                'loss' : test_loss,
+                'select_time' : select_time,
+                'select': selected_idxs,
+                'IR' : IR_value,
+                'ID_HE' : ID_HE_value,
+                'ID_TV' : ID_TV_value,
+                'LRID' : LRID_value,
+            },
+            step = n_iter
+            )
+
+        # if cfg.show_plot and cfg.plot_utils == 'tensorboard':
+        #     for j in range(len(test_f1_scores)):
+        #         writer.add_scalars('test/test_losses', {
+        #             'test_losses': test_losses[j]
+        #         }, j)
+        #         writer.add_scalars('test/test_f1_scores', {
+        #             'test_f1_scores': test_f1_scores[j],
+        #         }, j)
+        #     writer.close()
+
+        summary['total_time'] = time.time() - start_time
         with open('my_logs.json', 'w') as f:
             json.dump(summary,f)
-
-        wandb.log({
-            'accuracy' : test_acc,
-            'precision' : test_p,
-            'recall' : test_r,
-            'f1' : test_f1,
-            'loss' : test_loss,
-            'select_time' : select_time,
-            'select': selected_idxs,
-            'IR' : IR_value,
-            'ID_HE' : ID_HE_value,
-            'ID_TV' : ID_TV_value,
-            'LRID' : LRID_value,
-        },
-        step = n_iter
-        )
-
-    if cfg.show_plot and cfg.plot_utils == 'tensorboard':
-        for j in range(len(test_f1_scores)):
-            writer.add_scalars('test/test_losses', {
-                'test_losses': test_losses[j]
-            }, j)
-            writer.add_scalars('test/test_f1_scores', {
-                'test_f1_scores': test_f1_scores[j],
-            }, j)
-        writer.close()
-
-    summary['total_time'] = time.time() - start_time
-    with open('my_logs.json', 'w') as f:
-        json.dump(summary,f)
-    # Test set
-    # validate(-1, model, test_dataloader, criterion, device, cfg)
+        # Test set
+        # validate(-1, model, test_dataloader, criterion, device, cfg)
 
 if __name__ == '__main__':
 
