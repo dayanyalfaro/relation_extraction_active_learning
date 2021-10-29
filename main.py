@@ -1,3 +1,4 @@
+import gc
 import os
 import json
 import time
@@ -58,7 +59,7 @@ def main(cfg):
         'kmeans': data_select.QueryKMeans
     }
 
-    wandb_config = { 
+    wandb_config = {
                         'corpus' : cfg.corpus.name,
                         'model' : cfg.model.model_name,
                         'strategy' : cfg.strategy.name + cfg.strategy.type,
@@ -94,13 +95,13 @@ def main(cfg):
     test_dataloader = DataLoader(test_ds, batch_size=cfg.batch_size, shuffle=True, collate_fn=collate_fn(cfg))
 
     all_train_ds = load_pkl(train_data_path)
+    all_size = len(all_train_ds)
     class_dist = [item['rel2idx'] for item in all_train_ds]
     logger.info('Splitting dataset into labeled and unlabeled')
-    _, _, lab, unlab = split( y=class_dist, test_ratio=0, initial_label_rate=0.1,
+    _, _, lab, _ = split( y=class_dist, test_ratio=0, initial_label_rate=0.1,
                                 split_count=1, all_class=True)
     logger.info('Splitting done')
-    lab = list(lab)
-    unlab = list(unlab)
+
     if cfg.active_learning:
         cur_labeled_ds = {}
         unlabeled_ds = {}
@@ -111,6 +112,10 @@ def main(cfg):
                 unlabeled_ds[index] = value
     else:
         cur_labeled_ds = {index: value for index, value in enumerate(all_train_ds)}
+
+    del all_train_ds
+    del class_dist
+    gc.collect()
 
     # unlabeled_ds = {index: value for index, value in enumerate(all_train_ds) if (index in unlab)}
 
@@ -123,8 +128,6 @@ def main(cfg):
     # unlabeled_ds = dict(lst[cfg.start_size:])
 
     per_log_num = 400
-    all_size = len(all_train_ds)
-    print(all_size)
     writer = SummaryWriter('tensorboard')
 
     query_strategy = __Select__[cfg.strategy.name](cfg, device)
