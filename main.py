@@ -105,7 +105,7 @@ def main(cfg):
 
         with open(f'{run_name}.json', 'x') as f:
             json.dump(summary,f)
-        
+
         run = wandb.init(project="relation_extraction_active_learning", name= run_name, config = wandb_config)
 
         if cfg.active_learning:
@@ -222,6 +222,8 @@ def main(cfg):
             # f1_scores.append(mean(one_f1_scores[-5:]))
 
             if len(cur_labeled_ds) == all_size:
+                with open(f'{run_name}.json', 'w') as f:
+                    json.dump(summary,f)
                 break
 
             t = time.time()
@@ -239,7 +241,7 @@ def main(cfg):
             summary[n_iter]['ID_TV'] = ID_TV_value = ID.compute('TV')
             summary[n_iter]['LRID'] = LRID_value = LRID.compute()
 
-            with open('my_logs.json', 'w') as f:
+            with open(f'{run_name}.json', 'w') as f:
                 json.dump(summary,f)
 
             run.log({
