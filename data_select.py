@@ -178,7 +178,7 @@ class QueryBase(metaclass=ABCMeta):
         results = [ -values[i] * balance_weights[classes[pre_select[i]]] for i in range(len(pre_select))]
         sorted_results = sorted(zip(results, pre_select))
         _, lst = list(zip(*sorted_results))
-        pre_select = list(lst[1])
+        pre_select = list(lst)
         return pre_select
 
 
