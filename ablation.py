@@ -2,8 +2,8 @@ strategies = ['random', 'uncertainty', 'bald']
 filters = ['knn']
 balanced = ['True', 'False']
 types = ['_least_confident','_margin_sampling','_entropy_sampling']
-batch_size = [50,100,150,200]
-ratio = [1.5,2,2.5,3,3.5,4,4.5,5]
+batch_size = [25,50,75,100,125,150]
+ratio = [2,3,4,5]
 
 def experiment_1():
     prep = True
@@ -16,6 +16,7 @@ def experiment_1():
             line += f'\'select_batch_size={size}\' '
             if prep:
                 line += f'\'preprocess=True\' '
+                line += f'\'split=True\' '
                 prep = False
             print(line)
 

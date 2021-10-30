@@ -1,5 +1,7 @@
 seed: 1
 
+split: False
+
 active_learning: True
 
 total_iter: 100

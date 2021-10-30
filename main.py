@@ -13,7 +13,7 @@ import data_select
 
 from hydra import utils
 from omegaconf import OmegaConf
-from alipy.data_manipulate import split
+from alipy.data_manipulate import split, split_load
 from torch import optim
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
@@ -87,9 +87,13 @@ def main(cfg):
 
     all_train_ds = load_pkl(train_data_path)
     class_dist = [item['rel2idx'] for item in all_train_ds]
+    split_path = cfg.cwd + '/' + cfg.corpus.out_path + '/' + cfg.model.model_name
     logger.info('Splitting dataset into labeled and unlabeled')
-    _, _, lab, unlab = split( y=class_dist, test_ratio=0, initial_label_rate=0.1,
-                                split_count= cfg.seeds_count, all_class=True)
+    if cfg.split:
+        _, _, lab, _ = split( y=class_dist, test_ratio=0, initial_label_rate=0.1,
+                                    split_count= cfg.seeds_count, all_class=True, saving_path=split_path)
+    else:
+        _, _, lab, _ = split_load(split_path)
     logger.info('Splitting done')
 
     for idx,label_split in enumerate(lab):
