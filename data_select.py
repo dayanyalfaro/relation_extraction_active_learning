@@ -102,10 +102,10 @@ class QueryBase(metaclass=ABCMeta):
                 (x, y) = next(iter(one_dataloader))
                 for key, value in x.items():
                     x[key] = value.to(self.device)
-                    with torch.no_grad():
-                        feature = model(x)
-                        features[index]['feature'] = np.array(feature[0])
-                        features[index]['class'] = rel['rel2idx']
+                with torch.no_grad():
+                    feature = model(x).cpu()
+                features[index]['feature'] = np.array(feature[0])
+                features[index]['class'] = rel['rel2idx']
 
             ratio = { index: [] for index in pre_select}
 
@@ -129,8 +129,9 @@ class QueryBase(metaclass=ABCMeta):
                         (x, y) = next(iter(one_dataloader))
                         for key, value in x.items():
                             x[key] = value.to(self.device)
-                            with torch.no_grad():
-                                feature = np.array(model(x).cpu())
+
+                        with torch.no_grad():
+                            feature = np.array(model(x).cpu())
 
                         d_j, inds_j = nbrs_j.kneighbors(feature)
                         d_no_j, inds_no_j = nbrs_no_j.kneighbors(feature)
