@@ -147,6 +147,7 @@ def main(cfg):
             n_iter += 1
             summary[n_iter] = {}
 
+            # manual_seed(cfg.seed)
             model = __Model__[cfg.model.model_name](cfg)
             if (not cfg.active_learning) or len(cur_labeled_ds) == cfg.start_size:
                 logger.info(f'\n {model}')

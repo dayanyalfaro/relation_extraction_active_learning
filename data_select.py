@@ -103,7 +103,7 @@ class QueryBase(metaclass=ABCMeta):
                 for key, value in x.items():
                     x[key] = value.to(self.device)
                     with torch.no_grad():
-                        feature = model(x).cpu()
+                        feature = model(x)
                         features[index]['feature'] = np.array(feature[0])
                         features[index]['class'] = rel['rel2idx']
 
