@@ -82,8 +82,8 @@ def main(cfg):
 
     valid_ds = CustomDataset(valid_data_path)
     test_ds = CustomDataset(test_data_path)
-    valid_dataloader = DataLoader(valid_ds, batch_size=cfg.batch_size, shuffle=True, collate_fn=collate_fn(cfg))
-    test_dataloader = DataLoader(test_ds, batch_size=cfg.batch_size, shuffle=True, collate_fn=collate_fn(cfg))
+    valid_dataloader = DataLoader(valid_ds, batch_size=cfg.batch_size, shuffle=False, collate_fn=collate_fn(cfg))
+    test_dataloader = DataLoader(test_ds, batch_size=cfg.batch_size, shuffle=False, collate_fn=collate_fn(cfg))
 
     all_train_ds = load_pkl(train_data_path)
     class_dist = [item['rel2idx'] for item in all_train_ds]
@@ -155,7 +155,7 @@ def main(cfg):
             scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor=cfg.lr_factor, patience=cfg.lr_patience)
             criterion = nn.CrossEntropyLoss()
 
-            train_dataloader = DataLoader(list(cur_labeled_ds.values()), batch_size=cfg.batch_size, shuffle=True,
+            train_dataloader = DataLoader(list(cur_labeled_ds.values()), batch_size=cfg.batch_size, shuffle=False,
                                         collate_fn=collate_fn(cfg))
 
             # Performance metrics
