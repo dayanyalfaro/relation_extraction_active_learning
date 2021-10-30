@@ -97,6 +97,7 @@ def main(cfg):
     logger.info('Splitting done')
 
     for idx,label_split in enumerate(lab):
+        label_split = label_split.tolist()
         summary = {
                     'model' : cfg.model.model_name,
                     'strategy': cfg.strategy.name
