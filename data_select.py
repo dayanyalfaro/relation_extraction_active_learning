@@ -34,6 +34,9 @@ class QueryBase(metaclass=ABCMeta):
 
 
     def __call__(self, cur_labeled_ds, unlabeled_ds, model):
+        if self.sample_size > len(unlabeled_ds):
+            self.sample_size = self.pre_batch_size = self.batch_size = len(unlabeled_ds)
+
         if self.balance:
             pre_select, values = self.pre_sample(cur_labeled_ds, unlabeled_ds, model)
             classes = self.predict_classes(pre_select, cur_labeled_ds, unlabeled_ds, model)
