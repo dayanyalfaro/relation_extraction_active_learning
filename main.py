@@ -230,7 +230,7 @@ def main(cfg):
             cur_labeled_ds, unlabeled_ds, selected_idxs = query_strategy(cur_labeled_ds, unlabeled_ds, model)
 
             summary[n_iter]['time'] = select_time = time.time() - t
-            summary[n_iter]['select'] = list(selected_idxs)
+            summary[n_iter]['select'] = selected_idxs
 
             new_labeled_classes = [cur_labeled_ds[index]['rel2idx'] for index in selected_idxs]
             IR.update(new_labeled_classes)

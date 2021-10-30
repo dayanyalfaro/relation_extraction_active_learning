@@ -2,7 +2,7 @@ seed: 1
 
 active_learning: True
 
-total_iter: 50
+total_iter: 100
 
 use_gpu: True
 gpu_id: 0

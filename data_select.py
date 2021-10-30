@@ -225,7 +225,7 @@ class QueryUncertainty(QueryBase):
         sorted, idxs = U.sort()
         select = idxs_unlabeled[idxs[-self.sample_size:]]
         values = sorted[-self.sample_size:]
-        return select, values
+        return select.tolist(), values
 
 class QueryBALD(QueryBase):
     def __init__(self, cfg, device):
@@ -249,7 +249,7 @@ class QueryBALD(QueryBase):
         sorted, idxs = U.sort()
         select = idxs_unlabeled[idxs[-self.sample_size:]]
         values = sorted[-self.sample_size:]
-        return select, values
+        return select.tolist(), values
 
 class QueryKMeans(QueryBase):
     def pre_sample(self,cur_labeled_ds, unlabeled_ds, model):
@@ -266,4 +266,4 @@ class QueryKMeans(QueryBase):
         dis = dis.sum(axis=1)
         q_idxs = np.array([np.arange(features.shape[0])[cluster_idxs==i][dis[cluster_idxs==i].argmin()] for i in range(self.sample_size)])
 
-        return idxs_unlabeled[q_idxs], [1] * self.sample_size
+        return idxs_unlabeled[q_idxs].tolist(), [1] * self.sample_size
