@@ -7,7 +7,7 @@ ratio = [1.5,2,2.5,3,3.5,4,4.5,5]
 
 def experiment_1():
     prep = True
-    rndom = 'python main.py \'strategy=random\''
+    rndom = 'python main.py \'strategy=random\' '
     uncert = 'python main.py \'strategy=uncertainty\' \'strategy.type=_entropy_sampling\' '
 
     for command in [rndom,uncert]:

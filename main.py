@@ -89,7 +89,7 @@ def main(cfg):
     class_dist = [item['rel2idx'] for item in all_train_ds]
     logger.info('Splitting dataset into labeled and unlabeled')
     _, _, lab, unlab = split( y=class_dist, test_ratio=0, initial_label_rate=0.1,
-                                split_count= cfg.seed_count, all_class=True)
+                                split_count= cfg.seeds_count, all_class=True)
     logger.info('Splitting done')
 
     for idx,label_split in enumerate(lab):
