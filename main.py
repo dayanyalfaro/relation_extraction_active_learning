@@ -136,7 +136,7 @@ def main(cfg):
         ID = IDMetric(labeled_classes)
         LRID = LRIDMetric(labeled_classes)
 
-        while n_iter <= cfg.total_iter:
+        while n_iter < cfg.total_iter:
         # while len(cur_labeled_ds) <= all_size:
             n_iter += 1
             summary[n_iter] = {}

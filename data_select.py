@@ -62,7 +62,7 @@ class QueryBase(metaclass=ABCMeta):
                 x[key] = value.to(self.device)
             with torch.no_grad():
                 y_pred = model(x)
-            y_pred = y_pred.cpu().detach()
+            y_pred = y_pred.cpu()
             all_y_pred = torch.cat((all_y_pred, y_pred), 0)
         return all_y_pred
 
@@ -103,7 +103,7 @@ class QueryBase(metaclass=ABCMeta):
                 for key, value in x.items():
                     x[key] = value.to(self.device)
                     with torch.no_grad():
-                        feature = model(x).cpu().detach()
+                        feature = model(x).cpu()
                         features[index]['feature'] = np.array(feature[0])
                         features[index]['class'] = rel['rel2idx']
 
@@ -130,7 +130,7 @@ class QueryBase(metaclass=ABCMeta):
                         for key, value in x.items():
                             x[key] = value.to(self.device)
                             with torch.no_grad():
-                                feature = np.array(model(x).cpu().detach())
+                                feature = np.array(model(x).cpu())
 
                         d_j, inds_j = nbrs_j.kneighbors(feature)
                         d_no_j, inds_no_j = nbrs_no_j.kneighbors(feature)
