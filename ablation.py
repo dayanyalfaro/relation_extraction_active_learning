@@ -23,7 +23,7 @@ def experiment_1():
         for size in batch_size:
             line =  uncert + f'\'balance=True\' '
             line += f'\'select_batch_size={size}\' '
-            line += f'\'pre_batch_size={size * r}\' '
+            line += f'\'pre_batch_size={int(size * r)}\' '
             print(line)
 
 if __name__ == '__main__':

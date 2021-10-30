@@ -98,10 +98,10 @@ def main(cfg):
                     'strategy': cfg.strategy.name
                     }
 
-        run_name = f'{cfg.strategy.name + cfg.strategy.type}'
+        run_name = f'{cfg.strategy.name}{cfg.strategy.type}_{cfg.select_batch_size}'
         if cfg.balance:
-            run_name += 'balance'
-        run_name += f'{idx}'
+            run_name += '_balance_{cfg.pre_batch_size}'
+        run_name += f'_{idx}'
 
         with open(f'{run_name}.json', 'x') as f:
             json.dump(summary,f)
