@@ -94,10 +94,11 @@ def main(cfg):
                                     split_count= cfg.seeds_count, all_class=True, saving_path=split_path)
     else:
         _, _, lab, _ = split_load(split_path)
+        if cfg.seeds_count == 1:
+            lab = [lab]
     logger.info('Splitting done')
 
-    for idx,label_split in enumerate(lab):
-        label_split = label_split.tolist()
+    for idx,label_split in enumerate(lab,1):
         summary = {
                     'model' : cfg.model.model_name,
                     'strategy': cfg.strategy.name
