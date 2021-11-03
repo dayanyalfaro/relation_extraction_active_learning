@@ -408,7 +408,7 @@ def preprocess(cfg):
     else:
         logger.info('load and divide csv dataset...')
         csv_path = Path(os.path.join(cfg.cwd, cfg.corpus.data_path, 'annotated_sentences.csv'))
-        df = pd.read_csv(csv_path)
+        df = pd.read_csv(csv_path).drop_duplicates()
         valid_df = df.groupby('relation', group_keys=False).apply(lambda x: x.sample(frac = 0.09, random_state = 2))
         rest_df = df.drop(valid_df.index)
         test_df = rest_df.groupby('relation', group_keys=False).apply(lambda x: x.sample(frac = 0.35, random_state = 2))
