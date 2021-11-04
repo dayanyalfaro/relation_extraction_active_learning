@@ -148,7 +148,7 @@ class QueryBase(metaclass=ABCMeta):
                 lst = ratio[index]
                 clss = lst.index(min(lst))
                 classes[index] = clss
-                if clss == [unlabeled_ds[index]]['rel2idx']:
+                if clss == unlabeled_ds[index]['rel2idx']:
                     pred_correct += 1
 
         elif self.class_strategy == 'prob':
@@ -157,7 +157,7 @@ class QueryBase(metaclass=ABCMeta):
 
             for idx, item in enumerate(pre_select):
                 clss = int(probs[idx].argmax())
-                if clss == [unlabeled_ds[item]]['rel2idx']:
+                if clss == unlabeled_ds[item]['rel2idx']:
                     pred_correct += 1
                 classes[item] = clss
 
