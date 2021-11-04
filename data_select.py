@@ -39,14 +39,16 @@ class QueryBase(metaclass=ABCMeta):
 
         if self.balance:
             pre_select, values = self.pre_sample(cur_labeled_ds, unlabeled_ds, model)
-            classes = self.predict_classes(pre_select, cur_labeled_ds, unlabeled_ds, model)
+            classes, correct = self.predict_classes(pre_select, cur_labeled_ds, unlabeled_ds, model)
             balance_weights = self.get_balance_weights(cur_labeled_ds)
             pre_select = self.balance_sample(pre_select, classes,values, balance_weights)
             select = pre_select[:self.batch_size]
-            return self.get_divided_by_select(cur_labeled_ds, unlabeled_ds, select)
+            cur_labeled_ds, unlabeled_ds, select = self.get_divided_by_select(cur_labeled_ds, unlabeled_ds, select)
+            return cur_labeled_ds, unlabeled_ds, select, correct
         else:
             select, values = self.pre_sample(cur_labeled_ds, unlabeled_ds, model)
-            return self.get_divided_by_select(cur_labeled_ds, unlabeled_ds, select)
+            cur_labeled_ds, unlabeled_ds, select = self.get_divided_by_select(cur_labeled_ds, unlabeled_ds, select)
+            return cur_labeled_ds, unlabeled_ds, select, None
 
     @abstractmethod
     def pre_sample(self, *args):
@@ -90,6 +92,7 @@ class QueryBase(metaclass=ABCMeta):
 
     def predict_classes(self,pre_select, cur_labeled_ds, unlabeled_ds, model):
         classes = {}
+        pred_correct = 0
         # extractor = LMFcExtractor(model)
         model.eval()
 
@@ -145,15 +148,20 @@ class QueryBase(metaclass=ABCMeta):
                 lst = ratio[index]
                 clss = lst.index(min(lst))
                 classes[index] = clss
+                if clss == [unlabeled_ds[index]]['rel2idx']:
+                    pred_correct += 1
 
         elif self.class_strategy == 'prob':
             pre_dict = { idx : unlabeled_ds[idx] for idx in pre_select}
             probs = self.predict_prob(model,pre_dict)
 
             for idx, item in enumerate(pre_select):
-                classes[item] = int(probs[idx].argmax())
+                clss = int(probs[idx].argmax())
+                if clss == [unlabeled_ds[item]]['rel2idx']:
+                    pred_correct += 1
+                classes[item] = clss
 
-        return classes
+        return classes, pred_correct
 
 
     def get_balance_weights(self, cur_labeled_ds):

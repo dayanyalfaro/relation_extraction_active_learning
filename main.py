@@ -234,10 +234,12 @@ def main(cfg):
                 break
 
             t = time.time()
-            cur_labeled_ds, unlabeled_ds, selected_idxs = query_strategy(cur_labeled_ds, unlabeled_ds, model)
+            cur_labeled_ds, unlabeled_ds, selected_idxs, pred_correct = query_strategy(cur_labeled_ds, unlabeled_ds, model)
 
             summary[n_iter]['time'] = select_time = time.time() - t
             summary[n_iter]['select'] = selected_idxs
+
+            summary[n_iter]['pred_correct'] = pred_correct
 
             new_labeled_classes = [cur_labeled_ds[index]['rel2idx'] for index in selected_idxs]
             IR.update(new_labeled_classes)
@@ -259,6 +261,7 @@ def main(cfg):
                 'loss' : test_loss,
                 'select_time' : select_time,
                 'select': selected_idxs,
+                'pred_correct': pred_correct,
                 'IR' : IR_value,
                 'ID_HE' : ID_HE_value,
                 'ID_TV' : ID_TV_value,
