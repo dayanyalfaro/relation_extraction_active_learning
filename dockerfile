@@ -13,4 +13,4 @@ COPY requirements.txt ./requirements.txt
 
 RUN pip install -r ./requirements.txt
 
-RUN spacy download en
+RUN spacy download en_core_web_md
