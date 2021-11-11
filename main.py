@@ -277,7 +277,7 @@ def main(cfg):
             step = n_iter
             )
 
-            requests.get(url + f'{n_iter} f1: {test_f1}  lrid: {LRID_value}  pred: {pred_correct}')
+            requests.get(url + f'{n_iter} f1: {test_f1:.4f}  lrid: {LRID_value:.4f}  pred: {pred_correct}')
 
         # if cfg.show_plot and cfg.plot_utils == 'tensorboard':
         #     for j in range(len(test_f1_scores)):
