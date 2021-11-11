@@ -9,4 +9,4 @@ input_format: 'entity_marker'
 
 max_seq_length: 100
 
-num_hidden_layers: 12
+num_hidden_layers: 1
