@@ -4,7 +4,7 @@ split: False
 
 active_learning: True
 
-total_iter: 100
+total_iter: 10
 
 use_gpu: True
 gpu_id: 0
@@ -16,7 +16,7 @@ use_all_train : False
 train_size : 10000 # Subset of training dataset to use
 
 epoch: 5
-batch_size: 32
+batch_size: 64
 learning_rate: 3e-4
 lr_factor: 0.7 # Decay rate of learning rate
 lr_patience: 3 # Waiting epoch with learning rate decay

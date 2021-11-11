@@ -1,4 +1,4 @@
-strategies = ['random', 'uncertainty', 'bald']
+strategies = ['uncertainty', 'bald']
 filters = ['knn']
 balanced = ['True', 'False']
 types = ['_least_confident','_margin_sampling','_entropy_sampling']
@@ -27,30 +27,34 @@ def experiment_1():
             line += f'\'pre_batch_size={int(size * r)}\' '
             print(line)
 
-if __name__ == '__main__':
-    # for s in strategies:
-    #     line = 'python main.py '
-    #     line += f'\'balance=False\' '
-    #     line += f'\'strategy={s}\' '
-    #     if s == 'uncertainty':
-    #         for t in types:
-    #             new_line = line + f'\'strategy.type={t}\' '
-    #             print(new_line + '\n')
-    #     else:
-    #         print(line + '\n')
+def experiment_2():
+    rndom = 'python main.py \'balance=False\' \'strategy=random\' \'preprocess=True\' \'split=True\' '
+    print(rndom)
+    for s in strategies:
+        line = 'python main.py '
+        line += f'\'balance=False\' '
+        line += f'\'strategy={s}\' '
+        if s == 'uncertainty':
+            for t in types:
+                new_line = line + f'\'strategy.type={t}\' '
+                print(new_line)
+        else:
+            print(line)
 
-    # for s in strategies:
-    #     for f in filters:
-    #         line = 'python main.py '
-    #         line += f'\'balance=True\' '
-    #         line += f'\'strategy={s}\' '
-    #         line += f'\'class_strategy={f}\' '
-    #         if s == 'uncertainty':
-    #             for t in types:
-    #                 new_line = line + f'\'strategy.type={t}\' '
-    #                 print(line + '\n')
-    #         else:
-    #             print(line + '\n')
-    experiment_1()
+    for s in strategies:
+        line = 'python main.py '
+        line += f'\'balance=True\' '
+        line += f'\'strategy={s}\' '
+
+        if s == 'uncertainty':
+            for t in types:
+                new_line = line + f'\'strategy.type={t}\' '
+                print(new_line)
+        else:
+            print(line)
+
+if __name__ == '__main__':
+    # experiment_1()
+    experiment_2()
 
 
