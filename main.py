@@ -6,6 +6,7 @@ import torch
 import hydra
 import random
 import logging
+import requests
 import torch.nn as nn
 
 import models
@@ -28,6 +29,8 @@ logger = logging.getLogger(__name__)
 
 os.environ["WANDB_API_KEY"] = '42b01ac48aabb9117171872873dccfa9e26aa8c0'
 os.environ["WANDB_MODE"] = "dryrun"
+
+url = 'https://api.telegram.org/bot2144234362:AAEgU3ZjsZxbrZSYVCUNdor-T-Vxo10wjJY/sendMessage?chat_id=765144530&text='
 
 @hydra.main(config_path='config/', config_name = 'config')
 def main(cfg):
@@ -67,6 +70,7 @@ def main(cfg):
 
     if cfg.preprocess:
         preprocess(cfg)
+        requests.get(url + 'preprocess done')
 
     train_data_path = os.path.join(cfg.cwd, cfg.corpus.out_path, cfg.model.model_name, 'train.pkl')
     valid_data_path = os.path.join(cfg.cwd, cfg.corpus.out_path, cfg.model.model_name, 'valid.pkl')
@@ -92,6 +96,7 @@ def main(cfg):
         logger.info('Splitting dataset into labeled and unlabeled')
         _, _, lab, _ = split( y=class_dist, test_ratio=0, initial_label_rate=0.1,
                                     split_count= cfg.seeds_count, all_class=True, saving_path=split_path)
+        requests.get(url + 'split done')
     else:
         logger.info('Loading dataset splits')
         _, _, lab, _ = split_load(split_path)
@@ -113,6 +118,7 @@ def main(cfg):
             json.dump(summary,f)
 
         run = wandb.init(project="relation_extraction_active_learning", name= run_name, config = wandb_config)
+        requests.get(url + f'run {run_name} started')
 
         if cfg.active_learning:
             cur_labeled_ds = {}
@@ -218,6 +224,7 @@ def main(cfg):
             test_f1_scores.append(test_f1)
             test_losses.append(test_loss)
 
+
             # Test logs
             summary[n_iter]['f1'] = test_f1
             summary[n_iter]['p'] = test_p
@@ -270,6 +277,8 @@ def main(cfg):
             step = n_iter
             )
 
+            requests.get(url + f'{niter} f1: {test_f1}  lrid: {LRID_value}  pred: {pred_correct}')
+
         # if cfg.show_plot and cfg.plot_utils == 'tensorboard':
         #     for j in range(len(test_f1_scores)):
         #         writer.add_scalars('test/test_losses', {
@@ -283,6 +292,7 @@ def main(cfg):
         summary['total_time'] = time.time() - start_time
         with open(f'{run_name}.json', 'w') as f:
             json.dump(summary,f)
+        requests.get(url + f'run {run_name} finished')
         # Test set
         # validate(-1, model, test_dataloader, criterion, device, cfg)
 
