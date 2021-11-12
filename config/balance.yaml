@@ -2,6 +2,6 @@ balance: False
 
 class_strategy: "knn" #['knn']
 
-pre_batch_size: 150
+pre_batch_size: 750
 
 neighbors: 10

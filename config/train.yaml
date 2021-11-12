@@ -4,18 +4,18 @@ split: False
 
 active_learning: True
 
-total_iter: 10
+total_iter: 25
 
 use_gpu: True
 gpu_id: 0
 
 initial_label_rate: 0.1
 start_size : 2000 # Amount of labeled samples at the beginning
-select_batch_size : 100
+select_batch_size : 500
 use_all_train : False
 train_size : 10000 # Subset of training dataset to use
 
-epoch: 5
+epoch: 3
 batch_size: 64
 learning_rate: 3e-4
 lr_factor: 0.7 # Decay rate of learning rate
