@@ -75,7 +75,7 @@ def main(cfg):
     train_data_path = os.path.join(cfg.cwd, cfg.corpus.out_path, cfg.model.model_name, 'train.pkl')
     valid_data_path = os.path.join(cfg.cwd, cfg.corpus.out_path, cfg.model.model_name, 'valid.pkl')
     test_data_path = os.path.join(cfg.cwd, cfg.corpus.out_path, cfg.model.model_name, 'test.pkl')
-    
+
     if cfg.model.model_name not in ('lm', 'encoder') and not cfg.corpus.use_pretrained:
         vocab_path = os.path.join(cfg.cwd, cfg.corpus.out_path, cfg.model.model_name, 'vocab.pkl')
         vocab = load_pkl(vocab_path)
@@ -156,7 +156,8 @@ def main(cfg):
             if (not cfg.active_learning) or len(cur_labeled_ds) == cfg.start_size:
                 logger.info(f'\n {model}')
             model.to(device)
-            optimizer = optim.Adam(model.parameters(), lr=cfg.learning_rate, weight_decay=cfg.weight_decay)
+
+            optimizer = optim.Adagrad(model.parameters(), lr=cfg.learning_rate, weight_decay=cfg.weight_decay)
             scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor=cfg.lr_factor, patience=cfg.lr_patience)
             criterion = nn.CrossEntropyLoss()
 
