@@ -75,14 +75,12 @@ def main(cfg):
     train_data_path = os.path.join(cfg.cwd, cfg.corpus.out_path, cfg.model.model_name, 'train.pkl')
     valid_data_path = os.path.join(cfg.cwd, cfg.corpus.out_path, cfg.model.model_name, 'valid.pkl')
     test_data_path = os.path.join(cfg.cwd, cfg.corpus.out_path, cfg.model.model_name, 'test.pkl')
-    vocab_path = os.path.join(cfg.cwd, cfg.corpus.out_path, cfg.model.model_name, 'vocab.pkl')
-
-    if cfg.model.model_name in ('lm', 'encoder'):
-        vocab_size = None
-    else:
+    
+    if cfg.model.model_name not in ('lm', 'encoder') and not cfg.corpus.use_pretrained:
+        vocab_path = os.path.join(cfg.cwd, cfg.corpus.out_path, cfg.model.model_name, 'vocab.pkl')
         vocab = load_pkl(vocab_path)
         vocab_size = vocab.count
-    cfg.vocab_size = vocab_size
+        cfg.vocab_size = vocab_size
 
     valid_ds = CustomDataset(valid_data_path)
     test_ds = CustomDataset(test_data_path)
