@@ -109,7 +109,7 @@ def main(cfg):
 
         run_name = f'{cfg.strategy.name}{cfg.strategy.type}_{cfg.select_batch_size}'
         if cfg.balance:
-            run_name += '_balance_{cfg.pre_batch_size}'
+            run_name += f'_balance_{cfg.pre_batch_size}'
         run_name += f'_{idx}'
 
         with open(f'{run_name}.json', 'x') as f:
@@ -240,10 +240,11 @@ def main(cfg):
                 break
 
             t = time.time()
-            cur_labeled_ds, unlabeled_ds, selected_idxs, pred_correct = query_strategy(cur_labeled_ds, unlabeled_ds, model)
+            cur_labeled_ds, unlabeled_ds, selected_idxs, pred_correct, pre_select = query_strategy(cur_labeled_ds, unlabeled_ds, model)
 
             summary[n_iter]['time'] = select_time = time.time() - t
             summary[n_iter]['select'] = selected_idxs
+            summary[n_iter]['pre_select'] = pre_select
 
             summary[n_iter]['pred_correct'] = pred_correct
 

@@ -1,2 +1,4 @@
-python main.py 'strategy=uncertainty' 'strategy.type=_entropy_sampling' 'balance=False' 'select_batch_size=500' 
-python main.py 'strategy=uncertainty' 'strategy.type=_entropy_sampling' 'balance=True' 'select_batch_size=500' 'pre_batch_size=700'
+python main.py 'balance=False' 'strategy=bald' 
+python main.py 'balance=True' 'strategy=bald'
+python main.py 'active_learning=False'
+python main.py 'balance=False' 'strategy=random'

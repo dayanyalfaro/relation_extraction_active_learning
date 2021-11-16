@@ -28,8 +28,8 @@ def experiment_1():
             print(line)
 
 def experiment_2():
-    rndom = 'python main.py \'balance=False\' \'strategy=random\' \'preprocess=True\' \'split=True\' '
-    print(rndom)
+    # rndom = 'python main.py \'balance=False\' \'strategy=random\' \'preprocess=True\' \'split=True\' '
+    # print(rndom)
     for s in strategies:
         line = 'python main.py '
         line += f'\'balance=False\' '

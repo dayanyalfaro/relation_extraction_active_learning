@@ -44,11 +44,11 @@ class QueryBase(metaclass=ABCMeta):
             pre_select = self.balance_sample(pre_select, classes,values, balance_weights)
             select = pre_select[:self.batch_size]
             cur_labeled_ds, unlabeled_ds, select = self.get_divided_by_select(cur_labeled_ds, unlabeled_ds, select)
-            return cur_labeled_ds, unlabeled_ds, select, correct
+            return cur_labeled_ds, unlabeled_ds, select, correct, pre_select
         else:
             select, values = self.pre_sample(cur_labeled_ds, unlabeled_ds, model)
             cur_labeled_ds, unlabeled_ds, select = self.get_divided_by_select(cur_labeled_ds, unlabeled_ds, select)
-            return cur_labeled_ds, unlabeled_ds, select, None
+            return cur_labeled_ds, unlabeled_ds, select, None, None
 
     @abstractmethod
     def pre_sample(self, *args):
