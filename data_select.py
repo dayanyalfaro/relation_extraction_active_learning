@@ -90,6 +90,23 @@ class QueryBase(metaclass=ABCMeta):
         probs /= self.n_drop
         return probs
 
+    def predict_prob_dropout_split (self, model, unlabeled_ds):
+        model.train()
+        probs = torch.zeros([self.n_drop,len(unlabeled_ds),self.num_relations])
+
+        for i in range(self.n_drop):
+            for index, one in enumerate(unlabeled_ds.values()):
+                one_dataloader = DataLoader([one], collate_fn=collate_fn(self.cfg))
+                (x, y) = next(iter(one_dataloader))
+                for key, value in x.items():
+                    x[key] = value.to(self.device)
+                with torch.no_grad():
+                    y_pred = model(x)
+                    prob = nn.functional.softmax(y_pred, dim=1)
+                probs[i][index] += prob.cpu()[0]
+
+        return probs
+
     def predict_classes(self,pre_select, cur_labeled_ds, unlabeled_ds, model):
         classes = {}
         pred_correct = 0
@@ -244,7 +261,7 @@ class QueryBALD(QueryBase):
 
     def pre_sample(self,cur_labeled_ds, unlabeled_ds, model):
         if self.use_dropout:
-            probs = self.predict_prob_dropout(model, unlabeled_ds)
+            probs = self.predict_prob_dropout_split(model, unlabeled_ds)
         else:
             probs = self.predict_prob(model, unlabeled_ds)
 
